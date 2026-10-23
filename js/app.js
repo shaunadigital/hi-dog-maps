@@ -33,8 +33,26 @@
       (CATEGORY_ICON_PATHS[cat] || "") + "</svg>";
   }
 
-  /* Brand palette for the custom vector style. */
-  const MAP_COLORS = {
+  /* Night mode follows the device setting. Read once at load: the style is
+     built from these values, so a mid-session switch reloads the style (see
+     the matchMedia listener near the bottom). */
+  const DARK_QUERY = window.matchMedia ? window.matchMedia("(prefers-color-scheme: dark)") : null;
+  const DARK = !!(DARK_QUERY && DARK_QUERY.matches);
+  if (DARK) document.documentElement.classList.add("map-dark");
+
+  /* Brand palette for the custom vector style. The night palette keeps the
+     same relationships (warm land, teal water, muted green) at low value,
+     rather than inverting, so it still reads as the same chart after dark. */
+  const MAP_COLORS = DARK ? {
+    land: "#1d2a2f",
+    water: "#12313b",
+    green: "#1f3a30",
+    building: "#26343a",
+    road: "#33464e",
+    roadCasing: "#1a262b",
+    label: "#c9d6dc",
+    labelHalo: "#0e181c"
+  } : {
     land: "#f4ecdc",
     water: "#a7dbe2",
     green: "#cfe8cd",
@@ -58,7 +76,7 @@
      raster is gone and this is the original opaque #a7dbe2, so nothing changes
      at the street zooms where depth is irrelevant. */
   const WATER_FILL = ["interpolate", ["linear"], ["zoom"],
-    BATHY_FADE.start, "rgba(146, 205, 216, 0.45)",
+    BATHY_FADE.start, DARK ? "rgba(10, 38, 48, 0.55)" : "rgba(146, 205, 216, 0.45)",
     BATHY_FADE.end, MAP_COLORS.water];
 
   // Font used for map-canvas labels (must exist in the glyph server).
@@ -117,7 +135,11 @@
       } else if (ly.type === "symbol") {
         ly.paint["text-color"] = MAP_COLORS.label;
         ly.paint["text-halo-color"] = MAP_COLORS.labelHalo;
-        ly.paint["text-halo-width"] = 1.4;
+        ly.paint["text-halo-width"] = 1.4;      } else if (DARK && ly.type === "fill") {
+        // Anything the rules above don't name (residential and industrial
+        // landuse, airports, piers) keeps Positron's near-white fill, which
+        // shows up as glaring patches on the night map. Fold it into the land.
+        ly.paint["fill-color"] = MAP_COLORS.building;
       }
     });
     return style;
@@ -170,7 +192,10 @@
         // the bright end and deep ocean the dark end, so it brightens the
         // islands and deepens the trenches in one move.
         "raster-contrast": 0.18,
-        "raster-saturation": -0.08
+        "raster-saturation": DARK ? -0.25 : -0.08,
+        // Night: cap the brightness so the reef shelves glow faintly instead
+        // of the daytime chart sitting under a dark UI.
+        "raster-brightness-max": DARK ? 0.42 : 1
       }
     });
 
@@ -189,7 +214,7 @@
         "source-layer": "water",
         filter: ["match", ["geometry-type"], ["MultiPolygon", "Polygon"], true, false],
         paint: {
-          "line-color": "#4f8fa3",
+          "line-color": DARK ? "#3f8396" : "#4f8fa3",
           "line-width": ["interpolate", ["linear"], ["zoom"], 5, 0.7, 9, 1.2, 12, 1.6],
           "line-opacity": ["interpolate", ["linear"], ["zoom"],
             5, 0.85,
@@ -221,8 +246,9 @@
         // as the bathymetry finishes fading out.
         "raster-opacity": ["interpolate", ["linear"], ["zoom"],
           BATHY_FADE.start, 0.12,
-          BATHY_FADE.end, 0.28],
-        "raster-saturation": -1
+          BATHY_FADE.end, DARK ? 0.22 : 0.28],
+        "raster-saturation": -1,
+        "raster-brightness-max": DARK ? 0.35 : 1
       }
     });
 
@@ -435,7 +461,14 @@
   function onMapLoad() {
     // Sky / atmosphere (no DEM needed)
     try {
-      map.setSky({
+      map.setSky(DARK ? {
+        "sky-color": "#0b1a24",
+        "sky-horizon-blend": 0.6,
+        "horizon-color": "#1b2f38",
+        "horizon-fog-blend": 0.6,
+        "fog-color": "#14252c",
+        "fog-ground-blend": 0.4
+      } : {
         "sky-color": "#8fc7e8",
         "sky-horizon-blend": 0.6,
         "horizon-color": "#eaf4f2",
@@ -472,8 +505,9 @@
     map.on("render", syncMarkers);
     map.on("idle", syncMarkers);
     map.on("moveend", syncMarkers);
+    map.on("moveend", onMoveEndStrip);
     refresh();
-    fitInitial();
+    fitInitial(true);
     syncMarkers();
     // After fitAll, so the deep link's flyTo isn't immediately overwritten by
     // the all-islands jump.
@@ -580,13 +614,41 @@
     const park = PARKS[props.idx];
     const cls = props.type === "off-leash" ? "paw-marker-offleash" : "paw-marker-leashed";
     const el = document.createElement("div");
-    el.className = "map-pin";
+    el.className = "map-pin" + (props.idx === selectedIdx ? " is-selected" : "");
     el.innerHTML =
+      '<span class="pin-pulse" aria-hidden="true"></span>' +
       '<div class="paw-marker ' + cls + '">' + PAW_SVG +
         '<span class="paw-icon">' + catIcon(props.category, 14) + "</span></div>" +
       '<div class="marker-tip">' + escapeHtml(props.name) + "</div>";
-    el.addEventListener("click", function (e) { e.stopPropagation(); openModal(park); });
+    el.addEventListener("click", function (e) {
+      e.stopPropagation();
+      // Phones with the card strip up: a tap picks the place and brings its
+      // card into view (the Google Maps pattern); the card opens the details.
+      // Everywhere else a pin opens the panel directly, as before.
+      if (stripActive()) { selectFromPin(props.idx); return; }
+      openModal(park);
+    });
     return el;
+  }
+
+  /* ---------- Selected place ---------- */
+  // One place at a time is "selected": the one whose panel is open, or whose
+  // card is centred in the strip. Its pin grows and gets a pulsing ring so
+  // the map shows which place you are reading about.
+  let selectedIdx = null;
+  function setSelected(idx) {
+    if (selectedIdx === idx) return;
+    const prev = selectedIdx != null && markers["p" + selectedIdx];
+    if (prev) {
+      prev.getElement().classList.remove("is-selected");
+      prev.getElement().style.zIndex = "";
+    }
+    selectedIdx = idx;
+    const cur = idx != null && markers["p" + idx];
+    if (cur) {
+      cur.getElement().classList.add("is-selected");
+      cur.getElement().style.zIndex = "10";
+    }
   }
 
   /* A grouped bubble standing in for `point_count` nearby places. The ring is a
@@ -600,7 +662,10 @@
     const size = count < 10 ? "cluster-sm" : (count < 50 ? "cluster-md" : "cluster-lg");
     const el = document.createElement("div");
     el.className = "cluster-pin " + size;
+    // Three toe beans over the bubble turn the count into a paw print, the
+    // same mark as the pins, so the zoomed-out map is unmistakably this site.
     el.innerHTML =
+      '<span class="cluster-toes" aria-hidden="true"><i></i><i></i><i></i></span>' +
       '<div class="cluster-ring" style="--offleash-pct:' + pct + '%">' +
         '<div class="cluster-body">' + (props.point_count_abbreviated || count) + "</div>" +
       "</div>" +
@@ -668,6 +733,7 @@
           const park = PARKS[props.idx];
           marker = markers[id] = new maplibregl.Marker({ element: pinEl(props), anchor: "bottom" })
             .setLngLat([park.lng, park.lat]);
+          if (props.idx === selectedIdx) marker.getElement().style.zIndex = "10";
         }
       }
       newMarkers[id] = marker;
@@ -749,7 +815,27 @@
   const SLACK_LIMIT = 1.2; // ≈ frame 2.3x taller than the chain needs
   let initialIsland = null; // set from ?island= by applyQueryFilters()
 
-  function fitInitial() {
+  // First view glides in from a little further out and flat, settling into
+  // the fitted, tilted view as the pins arrive, instead of a hard cut. Skipped
+  // for deep links (the fly-to-place is the motion there) and for anyone who
+  // asked for reduced motion.
+  const REDUCED_MOTION = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+  function introCamera(cam) {
+    let hasPlace = false;
+    try { hasPlace = !!new URLSearchParams(window.location.search).get("place"); } catch (e) {}
+    if (REDUCED_MOTION || hasPlace) { applyCamera(cam, false); return; }
+    map.jumpTo({ center: cam.center, zoom: cam.zoom - 1.15, pitch: 0, bearing: -12 });
+    map.easeTo({
+      center: cam.center, zoom: cam.zoom, pitch: 20, bearing: 0,
+      duration: 1700,
+      easing: function (t) { return 1 - Math.pow(1 - t, 3); }
+    });
+  }
+
+  function fitInitial(intro) {
+    const apply = function (cam) {
+      if (intro && cam) introCamera(cam); else applyCamera(cam, false);
+    };
     const fc = currentFeatures();
     if (!map || !fc.features.length) return;
     const all = new maplibregl.LngLatBounds();
@@ -764,7 +850,7 @@
         const b = new maplibregl.LngLatBounds();
         isl.forEach(function (f) { b.extend(f.geometry.coordinates); });
         const cam = cameraForPadded(b);
-        if (cam) { applyCamera(cam, false); return; }
+        if (cam) { apply(cam); return; }
       }
     }
 
@@ -774,10 +860,10 @@
         const b = new maplibregl.LngLatBounds();
         oahu.forEach(function (p) { b.extend([p.lng, p.lat]); });
         const cam = cameraForPadded(b);
-        if (cam) { applyCamera(cam, false); return; }
+        if (cam) { apply(cam); return; }
       }
     }
-    applyCamera(cameraForPadded(all), false);
+    apply(cameraForPadded(all));
   }
 
   function applyCamera(cam, animate) {
@@ -875,7 +961,12 @@
     updateFilterCounts();
     updateFilterSummary(fc.features.length);
     renderListView();
+    // Filters changed: the next settle (usually the fitAll that follows)
+    // rebuilds the cards from the new set.
+    stripDirty = true;
+    if (map && strip && !strip.hidden) renderStrip(null);
   }
+  let stripDirty = false;
 
   function flyToPark(park) {
     if (!map) return;
@@ -1106,6 +1197,7 @@
     filterSheet.hidden = !open;
     filterPanel.classList.toggle("sheet-open", open);
     filtersToggle.setAttribute("aria-expanded", open ? "true" : "false");
+    updateStripVisibility();
   }
 
   if (filtersToggle) {
@@ -1169,6 +1261,7 @@
     // Collapse the sheet on the way out, so restoring never brings back a
     // panel that's taller than the one the user hid.
     if (hidden) setSheetOpen(false);
+    updateStripVisibility();
   }
 
   if (chromeHide) chromeHide.addEventListener("click", function () { setChromeHidden(true); });
@@ -1291,6 +1384,7 @@
     viewMode = "map";
     listView.hidden = true;
     updateViewButtons();
+    updateStripVisibility();
   }
 
   function setViewMode(mode) {
@@ -1304,6 +1398,7 @@
       listView.hidden = true;
     }
     updateViewButtons();
+    updateStripVisibility();
   }
 
   document.querySelectorAll("[data-view]").forEach(function (btn) {
@@ -1312,6 +1407,168 @@
       track("view", { mode: btn.getAttribute("data-view") });
     });
   });
+
+  /* ---------- Card strip (phones) ---------- */
+  // A swipeable row of the places in view, above the filter bar. Swiping
+  // centres a card, highlights its pin and glides the map to it; tapping a
+  // pin brings its card into view; tapping a card opens the full panel.
+  // Phones only: on desktop the map has room for hover tips and the side
+  // panel, and the strip would just cover the map.
+  //
+  // The strip is rebuilt only when the PERSON moves the map (or changes
+  // filters). Moves the strip itself causes are flagged with stripDriving,
+  // or every swipe would re-sort the cards out from under the thumb.
+  const strip = document.getElementById("card-strip");
+  const stripTrack = document.getElementById("card-track");
+  const STRIP_MIN_ZOOM = 8.0; // one island fills a phone at ~8.1 to 8.7 (Oʻahu opens at 8.71 on a 390px phone); below this it is several islands
+  const STRIP_MAX = 25;
+  const mobileQuery = window.matchMedia ? window.matchMedia("(max-width: 700px)") : null;
+  let stripIdxs = [];
+  let stripDriving = false;
+  let stripScrollTimer = null;
+  let stripProgrammaticScroll = false;
+
+  function stripAllowed() {
+    return !!(strip && map && mobileQuery && mobileQuery.matches &&
+      viewMode !== "list" && backdrop.hidden && guideEl.hidden &&
+      (!filterSheet || filterSheet.hidden) &&
+      !document.body.classList.contains("chrome-hidden") &&
+      map.getZoom() >= STRIP_MIN_ZOOM);
+  }
+  function stripActive() { return !!(strip && !strip.hidden && stripIdxs.length); }
+
+  function placeStrip() {
+    // Sit just above the filter bar, whatever height it has wrapped to.
+    const panel = document.getElementById("filter-panel");
+    if (!panel) return;
+    const top = panel.getBoundingClientRect().top;
+    strip.style.bottom = Math.max(12, Math.round(window.innerHeight - top + 8)) + "px";
+  }
+
+  function stripCard(idx) {
+    const p = PARKS[idx];
+    const off = p.type === "off-leash";
+    const thumb = p.photo
+      ? '<img src="' + escapeHtml(p.photo.replace(/\/\d+px-/, "/500px-")) + '" alt="" loading="lazy" decoding="async" onerror="this.remove()">'
+      : "";
+    return '<button class="strip-card" type="button" data-strip-idx="' + idx + '">' +
+      '<span class="strip-thumb strip-' + p.category + '">' + catIcon(p.category, 26) + thumb + "</span>" +
+      '<span class="strip-text">' +
+        '<span class="strip-name">' + escapeHtml(p.name) + "</span>" +
+        '<span class="strip-meta">' + escapeHtml((CATEGORY_LABEL[p.category] || "") + " · " + (p.region || p.island || "")) + "</span>" +
+        '<span class="strip-tag ' + (off ? "is-off" : "is-on") + '">' + (off ? "Off-leash" : "Leash required") + "</span>" +
+      "</span>" +
+    "</button>";
+  }
+
+  function renderStrip(mustInclude) {
+    if (!strip) return;
+    if (!stripAllowed()) { strip.hidden = true; return; }
+    const b = map.getBounds();
+    const c = map.getCenter();
+    const list = [];
+    PARKS.forEach(function (p, idx) {
+      if (passesFilters(p) && b.contains([p.lng, p.lat])) {
+        list.push({ idx: idx, d: distKm(c.lat, c.lng, p.lat, p.lng) });
+      }
+    });
+    list.sort(function (a, z) { return a.d - z.d; });
+    const idxs = list.slice(0, STRIP_MAX).map(function (x) { return x.idx; });
+    if (mustInclude != null && idxs.indexOf(mustInclude) === -1) idxs.unshift(mustInclude);
+    if (!idxs.length) { strip.hidden = true; stripIdxs = []; return; }
+    stripIdxs = idxs;
+    stripTrack.innerHTML = idxs.map(stripCard).join("");
+    strip.hidden = false;
+    placeStrip();
+    stripProgrammaticScroll = true;
+    stripTrack.scrollLeft = 0;
+    setTimeout(function () { stripProgrammaticScroll = false; }, 80);
+    const sel = mustInclude != null ? mustInclude : idxs[0];
+    setSelected(sel);
+    if (mustInclude != null) scrollToCard(sel, false);
+  }
+
+  function updateStripVisibility() {
+    if (!strip || !map) return;
+    if (!stripAllowed()) { strip.hidden = true; return; }
+    if (strip.hidden) renderStrip(selectedIdx);
+  }
+
+  function scrollToCard(idx, smooth) {
+    const card = stripTrack.querySelector('[data-strip-idx="' + idx + '"]');
+    if (!card) return;
+    stripProgrammaticScroll = true;
+    const left = card.offsetLeft - (stripTrack.clientWidth - card.offsetWidth) / 2;
+    stripTrack.scrollTo({ left: left, behavior: smooth && !REDUCED_MOTION ? "smooth" : "auto" });
+    setTimeout(function () { stripProgrammaticScroll = false; }, smooth ? 700 : 80);
+  }
+
+  // The map follows the strip: centre the place in the area the strip and
+  // filter bar leave visible, keeping the zoom the person chose.
+  function glideToCard(idx) {
+    const p = PARKS[idx];
+    const pad = { top: 90, bottom: Math.round(window.innerHeight - strip.getBoundingClientRect().top + 30), left: 30, right: 30 };
+    stripDriving = true;
+    // At island zoom the place is folded into a cluster, so the highlighted
+    // pin wouldn't exist. Come in to where pins stand alone (the same cap a
+    // cluster tap uses); after that, swipes keep whatever zoom you're at.
+    const zoom = Math.max(map.getZoom(), CLUSTER_MAX_ZOOM + 1);
+    map.easeTo({ center: [p.lng, p.lat], zoom: zoom, padding: pad, duration: REDUCED_MOTION ? 0 : 700 });
+  }
+
+  function selectFromPin(idx) {
+    setSelected(idx);
+    if (stripIdxs.indexOf(idx) === -1) renderStrip(idx);
+    else scrollToCard(idx, true);
+    track("pin-select", { category: PARKS[idx].category });
+  }
+
+  function onMoveEndStrip(e) {
+    if (stripDriving) { stripDriving = false; return; }
+    if (stripDirty) { stripDirty = false; renderStrip(null); return; }
+    // Only a move the person made (drag, pinch, zoom buttons, geolocate)
+    // re-sorts the cards; camera moves the app makes keep the current set,
+    // except that the strip appears or disappears as the zoom crosses
+    // STRIP_MIN_ZOOM either way.
+    const userMove = !!(e && e.originalEvent);
+    if (!strip) return;
+    if (userMove || strip.hidden || !stripAllowed()) renderStrip(null);
+  }
+
+  if (strip) {
+    stripTrack.addEventListener("scroll", function () {
+      if (stripProgrammaticScroll) return;
+      clearTimeout(stripScrollTimer);
+      stripScrollTimer = setTimeout(function () {
+        // The card nearest the middle is the one the swipe landed on.
+        const mid = stripTrack.scrollLeft + stripTrack.clientWidth / 2;
+        let best = null, bestD = Infinity;
+        stripTrack.querySelectorAll(".strip-card").forEach(function (el) {
+          const d = Math.abs(el.offsetLeft + el.offsetWidth / 2 - mid);
+          if (d < bestD) { bestD = d; best = el; }
+        });
+        if (!best) return;
+        const idx = Number(best.getAttribute("data-strip-idx"));
+        if (idx === selectedIdx) return;
+        setSelected(idx);
+        glideToCard(idx);
+      }, 140);
+    }, { passive: true });
+
+    stripTrack.addEventListener("click", function (e) {
+      const btn = e.target.closest("[data-strip-idx]");
+      if (!btn) return;
+      e.stopPropagation();
+      const park = PARKS[Number(btn.getAttribute("data-strip-idx"))];
+      openSource = "card";
+      focusPark(park);
+    });
+
+    if (mobileQuery && mobileQuery.addEventListener) {
+      mobileQuery.addEventListener("change", function () { if (map) renderStrip(selectedIdx); });
+    }
+    window.addEventListener("resize", function () { if (!strip.hidden) placeStrip(); });
+  }
 
   /* ---------- Modal ---------- */
   const backdrop = document.getElementById("modal-backdrop");
@@ -1393,6 +1650,8 @@
   function openModal(park, isStep) {
     track("place-open", { via: isStep ? "nearby" : openSource, category: park.category, island: park.island });
     openSource = "pin";
+    setSelected(PARKS.indexOf(park));
+    if (strip) strip.hidden = true;
     if (!isStep) buildNav(park);
     renderNav();
     const modalEl = document.querySelector("#modal-backdrop .modal");
@@ -1478,7 +1737,12 @@
     backdrop.hidden = false;
   }
 
-  function closeModal() { backdrop.hidden = true; }
+  function closeModal() {
+    backdrop.hidden = true;
+    // Keep the highlight only where the strip will show that place's card.
+    updateStripVisibility();
+    if (!stripActive()) setSelected(null);
+  }
 
   document.getElementById("modal-close").addEventListener("click", closeModal);
 
@@ -1499,11 +1763,13 @@
     }
     guideEl.hidden = false;
     guideEl.scrollTop = 0;
+    if (strip) strip.hidden = true;
     if (history.replaceState) history.replaceState(null, "", "#rules");
   }
 
   function closeGuide() {
     guideEl.hidden = true;
+    updateStripVisibility();
     if (history.replaceState) history.replaceState(null, "", location.pathname);
   }
 
@@ -1675,6 +1941,13 @@
       updateFilterSummary(visibleParks().length);
     }
   })();
+
+  // The map palette is baked into the style at load, so if the device flips
+  // between light and dark while the page is open (sunset auto-switch), reload
+  // to rebuild it rather than leave a light map under dark panels.
+  if (DARK_QUERY && DARK_QUERY.addEventListener) {
+    DARK_QUERY.addEventListener("change", function () { location.reload(); });
+  }
 
   /* ---------- Init ---------- */
   fetch("https://tiles.openfreemap.org/styles/positron")

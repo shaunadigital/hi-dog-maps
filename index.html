@@ -27,7 +27,9 @@
   <meta name="twitter:description" content="Find 308 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios." />
   <meta name="twitter:image" content="https://hawaiidogmap.com/icons/og-image.png" />
 
-  <meta name="theme-color" content="#0e7490" />
+  <meta name="theme-color" content="#0e7490" media="(prefers-color-scheme: light)" />
+  <meta name="theme-color" content="#11202a" media="(prefers-color-scheme: dark)" />
+  <meta name="color-scheme" content="light dark" />
   <link rel="manifest" href="manifest.json" />
 
   <!-- Favicons. Two treatments on purpose, generated from icons/src/*.svg:
@@ -56,7 +58,7 @@
   <link rel="preload" href="/fonts/readex-pro-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/readex-pro-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="css/styles.css?v=22" />
+  <link rel="stylesheet" href="css/styles.css?v=23" />
 </head>
 <body>
   <!-- Gradient defs for the paw-print markers, defined once and referenced by
@@ -179,6 +181,11 @@
     <div class="filter-divider" id="reset-divider" aria-hidden="true" hidden></div>
     <button class="chip chip-reset" id="filter-reset" hidden>&times; Reset</button>
     </div><!-- /.filter-sheet -->
+  </div>
+
+  <!-- Phones: swipeable cards for the places in view (renderStrip() in app.js). -->
+  <div class="card-strip" id="card-strip" hidden>
+    <div class="card-track" id="card-track" role="list" aria-label="Places in view"></div>
   </div>
 
   <!-- Shown only while the chrome is hidden, so there's always one obvious way
@@ -356,6 +363,6 @@
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="js/track.js?v=2"></script>
   <script src="js/parks-data.js?v=12"></script>
-  <script src="js/app.js?v=21"></script>
+  <script src="js/app.js?v=22"></script>
 </body>
 </html>
