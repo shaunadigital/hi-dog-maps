@@ -266,7 +266,7 @@ function page({ title, description, canonical, body, jsonld = [], breadcrumb, sc
 <link rel="preconnect" href="https://upload.wikimedia.org" />
 <link rel="preload" href="/fonts/readex-pro-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/fonts/readex-pro-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/css/pages.css?v=5" />
+<link rel="stylesheet" href="/css/pages.css?v=6" />
 ${ld}
 </head>
 <body>
