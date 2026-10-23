@@ -92,6 +92,13 @@
       const id = ly.id || "";
       const sl = ly["source-layer"] || "";
       ly.paint = ly.paint || {};
+      // Sea names are ours below ISLAND_LABEL_FADE.gone (CHANNEL_LABELS, with
+      // the ʻokina; the tiles spell them without). Hand over to the tile
+      // labels after that. Here, not in the symbol branch: these ids contain
+      // "water", so the water branch below would claim them first.
+      if (ly.type === "symbol" && sl === "water_name") {
+        ly.minzoom = Math.max(ly.minzoom || 0, 9.4);
+      }
       if (ly.type === "background") {
         ly.paint["background-color"] = MAP_COLORS.land;
       } else if (sl === "water" || /water|ocean|sea|bay/i.test(id)) {
@@ -221,6 +228,54 @@
             BATHY_FADE.end, 0.28]
         }
       });
+
+      /* Shallow-water glow and chart water lines, drawn UNDER the crisp
+         coastline on the sea side of it.
+         They come from their own coastline file (js/hawaii-coast.json: the
+         Census 1:500k state outline, main islands only, simplified to ~25 m),
+         NOT from the tiled `water` polygons. Tiles cut the ocean into squares,
+         and any line offset from those polygons traces the cut edges as
+         straight seams across the sea; a polygon outline also rings every
+         inland pond. The rings in the file are clockwise, so the right-hand
+         side (positive line-offset) is the sea. */
+      style.sources.coast = { type: "geojson", data: "js/hawaii-coast.json?v=1" };
+      const coastLine = function (id, paint) {
+        return { id: id, type: "line", source: "coast", layout: { "line-join": "round" }, paint: paint };
+      };
+      // Full strength to `a`, gone by `b`: these belong to the chart zooms,
+      // not to a street map of a harbour, where the file's 25 m simplification
+      // would also start to show.
+      const fadeOut = function (a, b, op) { return ["interpolate", ["linear"], ["zoom"], a, op, b, 0]; };
+      const lineInk = DARK ? "#4c9bb0" : "#3f8aa0";
+      const extra = [
+        // Turquoise reef shallows hugging every shore: a wide, heavily blurred
+        // band pushed out from the coast.
+        coastLine("shallows-glow", {
+          "line-color": DARK ? "#2a8a94" : "#6fe0dc",
+          "line-width": ["interpolate", ["linear"], ["zoom"], 5, 7, 9, 16, 12, 24],
+          "line-blur": ["interpolate", ["linear"], ["zoom"], 5, 6, 9, 12, 12, 18],
+          "line-offset": ["interpolate", ["linear"], ["zoom"], 5, 3, 9, 7, 12, 11],
+          "line-opacity": ["interpolate", ["linear"], ["zoom"], 5, DARK ? 0.42 : 0.7, 10.5, DARK ? 0.34 : 0.55, 12.5, 0]
+        }),
+        // Water lines: the concentric echoes of the shore that hand-drawn
+        // charts use, each fainter and further out.
+        coastLine("waterline-1", {
+          "line-color": lineInk, "line-width": 0.8,
+          "line-offset": ["interpolate", ["linear"], ["zoom"], 5, 4, 10, 6],
+          "line-opacity": fadeOut(10, 12, DARK ? 0.45 : 0.4)
+        }),
+        coastLine("waterline-2", {
+          "line-color": lineInk, "line-width": 0.7,
+          "line-offset": ["interpolate", ["linear"], ["zoom"], 5, 8, 10, 12],
+          "line-opacity": fadeOut(10, 12, DARK ? 0.28 : 0.24)
+        }),
+        coastLine("waterline-3", {
+          "line-color": lineInk, "line-width": 0.6,
+          "line-offset": ["interpolate", ["linear"], ["zoom"], 5, 13, 10, 19],
+          "line-opacity": fadeOut(10, 12, DARK ? 0.16 : 0.13)
+        })
+      ];
+      style.layers.splice.apply(style.layers, [waterIdx + 1, 0].concat(extra));
     }
 
     style.sources.hillshade = {
@@ -554,6 +609,16 @@
   const ISLAND_LABEL_FADE = { full: 8.2, gone: 9.4 };
   const islandLabelEls = [];
 
+  /* The three big channels between the covered islands, in italic chart
+     lettering, so the open water between them names a place too. Only the
+     wide ones: the narrow Maui Nui channels (Pailolo, ʻAuʻau, Kalohi,
+     Kealaikahiki) would sit on top of the Maui cluster at these zooms. */
+  const CHANNEL_LABELS = [
+    { name: "Kaʻieʻie Waho Channel", lng: -158.80, lat: 21.66, rot: -14 },
+    { name: "Kaʻiwi Channel", lng: -157.50, lat: 21.22, rot: 0 },
+    { name: "ʻAlenuihāhā Channel", lng: -156.12, lat: 20.43, rot: -38 }
+  ];
+
   function addIslandLabels() {
     ISLAND_LABELS.forEach(function (isle) {
       const el = document.createElement("div");
@@ -562,6 +627,17 @@
       islandLabelEls.push(el);
       new maplibregl.Marker({ element: el, anchor: "center" })
         .setLngLat([isle.lng, isle.lat])
+        .addTo(map);
+    });
+    CHANNEL_LABELS.forEach(function (ch) {
+      const el = document.createElement("div");
+      el.className = "channel-label";
+      // Rotation lives on an inner span: MapLibre owns the marker element's
+      // own transform (that is how it positions it).
+      el.innerHTML = '<span style="transform:rotate(' + ch.rot + 'deg)">' + escapeHtml(ch.name) + "</span>";
+      islandLabelEls.push(el);
+      new maplibregl.Marker({ element: el, anchor: "center" })
+        .setLngLat([ch.lng, ch.lat])
         .addTo(map);
     });
     updateIslandLabels();
