@@ -12,7 +12,7 @@
 (function () {
   "use strict";
 
-  var UMAMI_WEBSITE_ID = ""; // e.g. "3f1c...": from Umami Cloud > Settings > Websites
+  var UMAMI_WEBSITE_ID = "23fbac24-f46b-447d-877f-d2c80794643c"; // Umami Cloud > Settings > Websites
   var UMAMI_SRC = "https://cloud.umami.is/script.js";
 
   // Events fired before the Umami script arrives are queued, not lost.

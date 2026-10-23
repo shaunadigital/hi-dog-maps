@@ -260,13 +260,13 @@ function page({ title, description, canonical, body, jsonld = [], breadcrumb, sc
 <link rel="icon" href="/favicon.ico?v=2" sizes="any" />
 <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png?v=2" />
 <!-- The hero photo is cross-origin to Wikimedia and is the LCP element on the
-     pages that have one, so the connection is worth opening early. Urbanist is
-     self-hosted now, so fonts.googleapis.com and fonts.gstatic.com are gone from
+     pages that have one, so the connection is worth opening early. Readex Pro is
+     self-hosted, so fonts.googleapis.com and fonts.gstatic.com are gone from
      the critical path entirely; see the @font-face block in css/pages.css. -->
 <link rel="preconnect" href="https://upload.wikimedia.org" />
-<link rel="preload" href="/fonts/urbanist-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="preload" href="/fonts/urbanist-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/css/pages.css?v=4" />
+<link rel="preload" href="/fonts/readex-pro-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
+<link rel="preload" href="/fonts/readex-pro-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
+<link rel="stylesheet" href="/css/pages.css?v=5" />
 ${ld}
 </head>
 <body>
@@ -307,7 +307,7 @@ ${body}
   </p>
   <p class="foot-credit"><a class="thread-credit" href="https://shauna.digital" target="_blank" rel="noopener" aria-label="Built with love by shauna.digital">Built with <svg class="thread-credit__heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by shauna.digital</a></p>
 </footer>
-<script src="/js/track.js?v=1" defer></script>
+<script src="/js/track.js?v=2" defer></script>
 ${scripts}
 </body>
 </html>
