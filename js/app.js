@@ -415,7 +415,16 @@
           map.triggerRepaint();
           clearInterval(poll);
           setTimeout(function () {
-            try { map.resize(); map.panBy([1, 1], { duration: 0 }); syncMarkers(); map.triggerRepaint(); } catch (e) {}
+            // The 1px nudge forces a first render in panes that gate it, but any
+            // camera call cancels an animation in flight: it used to stop the
+            // /?place= fly-in a quarter of the way, leaving the panel open over
+            // a map that never arrived. Skip the nudge while the camera moves.
+            try {
+              map.resize();
+              if (!map.isMoving()) map.panBy([1, 1], { duration: 0 });
+              syncMarkers();
+              map.triggerRepaint();
+            } catch (e) {}
           }, 250);
         }
       } catch (e) {}
