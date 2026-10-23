@@ -58,7 +58,7 @@
   <link rel="preload" href="/fonts/readex-pro-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/readex-pro-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="css/styles.css?v=25" />
+  <link rel="stylesheet" href="css/styles.css?v=26" />
 </head>
 <body>
   <!-- Gradient defs for the paw-print markers, defined once and referenced by
@@ -123,7 +123,7 @@
         <p class="brand-sub"><span id="result-count">308</span> spots on Oʻahu, Maui, Kauaʻi &amp; Hawaiʻi Island</p>
       </div>
       <button class="guide-trigger" id="guide-trigger" type="button">
-        <span aria-hidden="true">⚠️</span><span class="guide-trigger-label">Rules &amp; safety</span>
+        <span data-ic="warning" data-w="fill" data-size="15"></span><span class="guide-trigger-label">Rules &amp; safety</span>
       </button>
     </div>
   </div>
@@ -139,27 +139,27 @@
     <div class="filter-bar">
       <button class="chip chip-filters" id="filters-toggle" type="button"
               aria-expanded="false" aria-controls="filter-sheet">
-        <span class="filters-icon" aria-hidden="true">☰</span>
+        <span class="filters-icon" data-ic="sliders-horizontal" data-size="15"></span>
         <span class="filters-summary" id="filters-summary">All places</span>
         <span class="chip-count" id="filters-count"> (308)</span>
         <span class="filters-caret" aria-hidden="true">▾</span>
       </button>
       <div class="filter-divider" aria-hidden="true"></div>
       <div class="filter-group" role="group" aria-label="Map view, satellite, or list">
-        <button class="chip active" data-view="map"><span aria-hidden="true">🗺️</span><span class="view-label">Map</span></button>
-        <button class="chip" data-view="satellite"><span aria-hidden="true">🛰️</span><span class="view-label">Satellite</span></button>
-        <button class="chip" data-view="list"><span aria-hidden="true">☰</span><span class="view-label">List</span></button>
+        <button class="chip active" data-view="map"><span data-ic="map-trifold" data-w="both" data-size="15"></span><span class="view-label">Map</span></button>
+        <button class="chip" data-view="satellite"><span data-ic="globe-hemisphere-west" data-w="both" data-size="15"></span><span class="view-label">Satellite</span></button>
+        <button class="chip" data-view="list"><span data-ic="list-bullets" data-w="both" data-size="15"></span><span class="view-label">List</span></button>
       </div>
       <div class="filter-divider" aria-hidden="true"></div>
       <button class="chip chip-icon-only" id="chrome-hide" type="button"
               aria-label="Hide controls for a full-screen map" title="Hide controls">
-        <span aria-hidden="true">⤡</span>
+        <span data-ic="arrows-out" data-size="16"></span>
       </button>
     </div>
 
     <div class="filter-sheet" id="filter-sheet" hidden>
     <div class="search-row" role="search">
-      <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <span class="search-icon" data-ic="magnifying-glass" data-size="17"></span>
       <input type="search" id="search-input" placeholder="Search by name, town or island"
              aria-label="Search places by name, town or island" autocomplete="off" enterkeyhint="search" />
     </div>
@@ -191,7 +191,7 @@
   <!-- Shown only while the chrome is hidden, so there's always one obvious way
        back. A hide control with no visible way to undo it is a trap. -->
   <button class="chrome-restore" id="chrome-restore" type="button" hidden>
-    <span aria-hidden="true">⤢</span> Show controls
+    <span data-ic="arrows-in" data-size="15"></span> Show controls
   </button>
 
   <!-- Park detail panel: slides in from the right on desktop, up from the
@@ -214,23 +214,23 @@
         <p class="modal-desc" id="modal-desc"></p>
 
         <div class="info-card info-dogs">
-          <h3><span aria-hidden="true">🐶 </span>Dog rules</h3>
+          <h3><span data-ic="shield-check" data-size="15"></span>Dog rules</h3>
           <p id="modal-dog-rules"></p>
         </div>
         <div class="info-grid">
           <div class="info-card">
-            <h3><span aria-hidden="true">🕐 </span>Hours</h3>
+            <h3><span data-ic="clock" data-size="15"></span>Hours</h3>
             <p id="modal-hours"></p>
           </div>
           <div class="info-card">
-            <h3><span aria-hidden="true">✨ </span>Amenities</h3>
+            <h3><span data-ic="list-checks" data-size="15"></span>Amenities</h3>
             <ul class="amenity-list" id="modal-amenities"></ul>
           </div>
         </div>
 
         <div class="modal-actions">
-          <a id="modal-directions" class="btn btn-primary" target="_blank" rel="noopener"><span aria-hidden="true">🧭 </span>Get directions</a>
-          <a id="modal-streetview" class="btn btn-secondary" target="_blank" rel="noopener"><span aria-hidden="true">👀 </span>View on Google Maps</a>
+          <a id="modal-directions" class="btn btn-primary" target="_blank" rel="noopener"><span data-ic="navigation-arrow" data-size="17"></span>Get directions</a>
+          <a id="modal-streetview" class="btn btn-secondary" target="_blank" rel="noopener"><span data-ic="arrow-square-out" data-size="17"></span>View on Google Maps</a>
         </div>
         <p class="modal-disclaimer">Check posted signs on arrival; rules and access change.
           Pick up after your pup.
@@ -254,7 +254,7 @@
         the whole state, and what changes island by island.</p>
 
       <div class="guide-block guide-warn">
-        <h3>⚠️ Before you go</h3>
+        <h3><span data-ic="warning" data-w="fill" data-size="18"></span>Before you go</h3>
         <p><strong>Check on arrival.</strong> Rules, hours and access change without notice.
           Posted signs win over anything on this map.</p>
       </div>
@@ -319,11 +319,11 @@
           with no passenger ferry, there&rsquo;s no practical way to bring a dog to either.</p>
         <p>Every spot here comes from official designations and verified lists, not a scrape
           or a guess. Sites with unclear or nuanced rules are flagged
-          <span class="tag tag-uncertain">⚠️ Verify before visiting</span> rather than
+          <span class="tag tag-uncertain"><span data-ic="warning" data-w="fill" data-size="13"></span>Verify before visiting</span> rather than
           presented as certain.</p>
 
         <div class="info-card">
-          <h3>🗂️ Data &amp; map sources</h3>
+          <h3><span data-ic="books" data-size="16"></span>Data &amp; map sources</h3>
           <ul class="about-sources">
             <li><a href="https://www.honolulu.gov/dpr/dog-parks/" target="_blank" rel="noopener">City &amp; County of Honolulu, Dept. of Parks &amp; Recreation</a>: Oʻahu on-leash park designations &amp; GIS park data</li>
             <li><a href="https://www.hawaiianhumane.org/dog-friendly-parks/" target="_blank" rel="noopener">Hawaiian Humane Society</a>: Oʻahu dog-friendly beach &amp; park lists</li>
@@ -346,7 +346,7 @@
              would depend on the sitemap alone to be discovered. These are also
              genuinely useful: a text index for anyone who'd rather read than pan. -->
         <nav class="about-browse" aria-label="Browse all places">
-          <h3>🧭 Browse every place</h3>
+          <h3><span data-ic="compass" data-size="16"></span>Browse every place</h3>
           <p class="about-browse-row"><strong>By island</strong>
             <a href="/oahu/">Oʻahu</a><a href="/maui/">Maui</a><a href="/kauai/">Kauaʻi</a><a href="/hawaii-island/">Hawaiʻi Island</a></p>
           <p class="about-browse-row"><strong>By type</strong>
@@ -362,7 +362,8 @@
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
   <script src="js/track.js?v=2"></script>
+  <script src="js/icons.js?v=1"></script>
   <script src="js/parks-data.js?v=12"></script>
-  <script src="js/app.js?v=23"></script>
+  <script src="js/app.js?v=24"></script>
 </body>
 </html>

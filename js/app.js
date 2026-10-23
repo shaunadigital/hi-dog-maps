@@ -10,27 +10,13 @@
     "patio": "Patio"
   };
 
-  // Clean line-icon set (Lucide) drawn into markers, hero, etc.
-  const CATEGORY_ICON_PATHS = {
-    "dog-park":
-      '<circle cx="11" cy="4" r="2"/><circle cx="18" cy="8" r="2"/><circle cx="20" cy="16" r="2"/>' +
-      '<path d="M9 10a5 5 0 0 1 5 5v3.5a3.5 3.5 0 0 1-6.84 1.045Q6.52 17.48 4.46 16.84A3.5 3.5 0 0 1 5.5 10Z"/>',
-    "park":
-      '<path d="m17 14 3 3.3a1 1 0 0 1-.7 1.7H4.7a1 1 0 0 1-.7-1.7L7 14h-.3a1 1 0 0 1-.7-1.7L9 9h-.2A1 1 0 0 1 8 7.3L12 3l4 4.3a1 1 0 0 1-.8 1.7H15l3 3.3a1 1 0 0 1-.7 1.7H17Z"/><path d="M12 22v-3"/>',
-    "beach":
-      '<path d="M2 6c.6.5 1.2 1 2.5 1C7 7 7 5 9.5 5c2.5 0 2.5 2 5 2s2.5-2 5-2c1.3 0 1.9.5 2.5 1"/>' +
-      '<path d="M2 12c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"/>' +
-      '<path d="M2 18c.6.5 1.2 1 2.5 1 2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2c1.3 0 1.9.5 2.5 1"/>',
-    "trail": '<path d="m8 3 4 8 5-5 5 15H2L8 3z"/>',
-    "patio":
-      '<path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/>' +
-      '<path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3Zm0 0v7"/>'
-  };
-
-  function catIcon(cat, size, stroke) {
-    return '<svg viewBox="0 0 24 24" width="' + size + '" height="' + size + '" fill="none" stroke="' +
-      (stroke || "#fff") + '" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-      (CATEGORY_ICON_PATHS[cat] || "") + "</svg>";
+  // Place-type icon, from the shared set in js/icons.js (Phosphor plus three
+  // drawn to match). Solid by default: these mostly sit on coloured tiles
+  // (pins, list dots, strip thumbnails, the panel's fallback hero), where an
+  // outline breaks up at 13 to 14 px. The colour comes from the wrapper.
+  function catIcon(cat, size, color, weight) {
+    return '<span class="cat-ic" style="color:' + (color || "#fff") + '">' +
+      hdmIcon(cat, size, weight || "fill") + "</span>";
   }
 
   /* Night mode follows the device setting. Read once at load: the style is
@@ -1195,8 +1181,14 @@
   /* ---------- Filters ---------- */
   // Reuse the same line-icon set as the markers/hero, so filter chips read as
   // part of the same visual system instead of mismatched emoji.
+  // Icon slots in index.html. Filled here rather than inlined so the page's
+  // markup stays readable and every icon comes from the one set.
+  document.querySelectorAll("[data-ic]").forEach(function (el) {
+    el.innerHTML = hdmIcon(el.getAttribute("data-ic"), Number(el.getAttribute("data-size")) || 16,
+      el.getAttribute("data-w") || "regular");
+  });
   document.querySelectorAll(".chip-icon").forEach(function (el) {
-    el.innerHTML = catIcon(el.getAttribute("data-icon"), 14, "currentColor");
+    el.innerHTML = hdmIcon(el.getAttribute("data-icon"), 15, "both");
   });
 
   const filterReset = document.getElementById("filter-reset");
@@ -1785,17 +1777,19 @@
 
     document.getElementById("modal-badges").innerHTML =
       '<span class="tag ' + (park.type === "off-leash" ? "tag-offleash" : "tag-leashed") + '">' +
-        (park.type === "off-leash" ? "🐕 Off-leash" : "🦮 Leash required") +
+        (park.type === "off-leash" ? hdmIcon("off-leash", 14, "fill") + " Off-leash" : hdmIcon("leashed", 14, "fill") + " Leash required") +
       "</span>" +
       '<span class="tag tag-region">' + escapeHtml(CATEGORY_LABEL[park.category] || "Park") + "</span>" +
       '<span class="tag tag-region">' + escapeHtml(park.region || "") + "</span>" +
-      (park.uncertain ? '<span class="tag tag-uncertain">⚠️ Verify before visiting</span>' : "");
+      (park.uncertain ? '<span class="tag tag-uncertain">' + hdmIcon("warning", 14, "fill") + " Verify before visiting</span>" : "");
 
     const amenities = document.getElementById("modal-amenities");
     amenities.innerHTML = "";
     (park.amenities || []).forEach(function (a) {
       const li = document.createElement("li");
-      li.textContent = a;
+      const ic = hdmAmenityIcon(a);
+      if (ic) li.innerHTML = hdmIcon(ic, 13);
+      li.appendChild(document.createTextNode(a));
       amenities.appendChild(li);
     });
     if (!park.amenities || park.amenities.length === 0) {

@@ -388,7 +388,7 @@ body.chrome-hidden .filter-panel { transform: translateY(14px); }
 
 /* Category chip icons — same line-icon set as the map markers/hero, so the
    filter bar reads as one visual system instead of mismatched emoji. */
-.chip-icon { display: inline-flex; width: 14px; height: 14px; flex-shrink: 0; }
+.chip-icon { display: inline-flex; flex-shrink: 0; }
 .chip-icon svg { display: block; }
 
 /* Live result count per chip; dims when a combination would return nothing. */
@@ -1493,3 +1493,24 @@ body.basemap-satellite .channel-label span { color: rgba(255, 255, 255, 0.7); te
 .chip.active { font-weight: var(--w-heading); }
 /* Counts that change as you filter shouldn't jiggle the layout. */
 .chip-count, #filters-count, .cluster-body, #result-count, .list-view-count { font-variant-numeric: tabular-nums; }
+
+/* ---------- Icons (js/icons.js: Phosphor plus three drawn to match) ---------- */
+/* Outline at rest, solid when selected: chips carry both versions and the
+   .active class picks one, so selecting never changes the icon's shape. */
+.ic { display: inline-block; flex-shrink: 0; vertical-align: -0.16em; }
+[data-ic] { display: inline-flex; align-items: center; }
+.ic-f { display: none; }
+.chip.active .ic-r { display: none; }
+.chip.active .ic-f { display: inline-block; }
+.cat-ic { display: inline-flex; line-height: 0; }
+.paw-icon .ic, .list-card-icon .ic { display: block; }
+/* Icon then label, where the label isn't laid out with a flex gap. */
+.info-card h3 [data-ic], .btn [data-ic], .tag .ic, .tag [data-ic], .amenity-list .ic,
+.guide-block h3 [data-ic], .about-browse h3 [data-ic] { margin-right: 0.4em; }
+.btn [data-ic], .info-card h3 [data-ic], .guide-block h3 [data-ic] { vertical-align: -0.18em; }
+.search-icon { display: inline-flex; }
+/* .chip-icon svg { display: block } above out-ranks .ic-f; restate the swap at
+   that specificity so inactive chips never show both versions. */
+.chip-icon .ic-f { display: none; }
+.chip.active .chip-icon .ic-r { display: none; }
+.chip.active .chip-icon .ic-f { display: block; }

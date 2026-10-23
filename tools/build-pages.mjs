@@ -45,6 +45,10 @@ const SITE = "Hawaiʻi Dog Map";
 // file the map does, rather than a second exported copy that could drift.
 const dataSrc = readFileSync(join(ROOT, "js/parks-data.js"), "utf8");
 const PARKS = new Function(dataSrc + "; return PARKS;")();
+// The same icon set the map uses (js/icons.js, built by tools/build-icons.mjs),
+// evaluated the same way as the data, so pages and map can't drift.
+const { hdmIcon: icon, hdmAmenityIcon: amenityIcon } = new Function(
+  readFileSync(join(ROOT, "js/icons.js"), "utf8") + "; return { hdmIcon, hdmAmenityIcon };")();
 
 /* ---------- Vocabulary ---------- */
 const ISLANDS = [
@@ -266,7 +270,7 @@ function page({ title, description, canonical, body, jsonld = [], breadcrumb, sc
 <link rel="preconnect" href="https://upload.wikimedia.org" />
 <link rel="preload" href="/fonts/readex-pro-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/fonts/readex-pro-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/css/pages.css?v=6" />
+<link rel="stylesheet" href="/css/pages.css?v=7" />
 ${ld}
 </head>
 <body>
@@ -392,8 +396,8 @@ function hubMap(list, label, fullMapHref) {
     <p class="hub-map-fallback">Loading the map…</p>
   </div>
   <div class="hub-tools">
-    <button class="btn" type="button" id="near-me"><span aria-hidden="true">📍 </span>Sort by distance from me</button>
-    <a class="btn btn-primary" href="${fullMapHref}"><span aria-hidden="true">🗺️ </span>Open the full map</a>
+    <button class="btn" type="button" id="near-me">${icon("crosshair", 18)}Sort by distance from me</button>
+    <a class="btn btn-primary" href="${fullMapHref}">${icon("map-trifold", 18)}Open the full map</a>
   </div>
   <p class="near-status" id="near-status" role="status" hidden></p>
 </section>`;
@@ -468,15 +472,15 @@ function placePage(p) {
   const body = `
 <article class="place">
   <div class="tags">
-    <span class="tag tag-${offleash ? "off" : "on"}"><span aria-hidden="true">${offleash ? "🐕" : "🦮"} </span>${offleash ? "Off-leash" : "Leash required"}</span>
+    <span class="tag tag-${offleash ? "off" : "on"}">${icon(offleash ? "off-leash" : "leashed", 14, "fill")}${offleash ? "Off-leash" : "Leash required"}</span>
     <span class="tag">${esc(cat.one)}</span>
     <span class="tag">${esc(isle.name)}</span>
-    ${p.uncertain ? '<span class="tag tag-warn">⚠️ Verify before visiting</span>' : ""}
+    ${p.uncertain ? `<span class="tag tag-warn">${icon("warning", 14, "fill")}Verify before visiting</span>` : ""}
   </div>
 
   <h1>${esc(p.name)}</h1>
   <p class="lede">${esc(p.description)}</p>
-  ${p.address ? `<p class="addr">📍 ${esc(p.address)}</p>` : ""}
+  ${p.address ? `<p class="addr">${icon("map-pin-simple", 17)}${esc(p.address)}</p>` : ""}
 
   ${p.photo
       ? `<figure class="hero">
@@ -486,26 +490,26 @@ function placePage(p) {
       : ""}
 
   <section class="panel panel-dogs">
-    <h2><span aria-hidden="true">🐶 </span>Dog rules</h2>
+    <h2>${icon("shield-check", 18)}Dog rules</h2>
     <p>${esc(p.dogRules || "")}</p>
   </section>
 
   <div class="two-up">
     <section class="panel">
-      <h2><span aria-hidden="true">🕐 </span>Hours</h2>
+      <h2>${icon("clock", 18)}Hours</h2>
       <p>${esc(p.hours || "Not posted")}</p>
     </section>
     <section class="panel">
-      <h2><span aria-hidden="true">✨ </span>Amenities</h2>
+      <h2>${icon("list-checks", 18)}Amenities</h2>
       ${p.amenities?.length
-        ? `<ul class="chips">${p.amenities.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>`
+        ? `<ul class="chips">${p.amenities.map((a) => `<li>${amenityIcon(a) ? icon(amenityIcon(a), 14) : ""}${esc(a)}</li>`).join("")}</ul>`
         : "<p>None listed</p>"}
     </section>
   </div>
 
   <div class="actions">
-    <a class="btn btn-primary" href="/?place=${p._slug}"><span aria-hidden="true">🗺️ </span>Show on the map</a>
-    <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener"><span aria-hidden="true">🧭 </span>Get directions</a>
+    <a class="btn btn-primary" href="/?place=${p._slug}">${icon("map-pin", 18)}Show on the map</a>
+    <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener">${icon("navigation-arrow", 18)}Get directions</a>
   </div>
 
   <section class="rules-note">
@@ -750,7 +754,7 @@ fine on Maui can be an offence on Kauaʻi. Here's what carries across the whole 
 changes island by island.</p>
 
 <section class="panel panel-warn">
-  <h2>⚠️ Before you go</h2>
+  <h2>${icon("warning", 20, "fill")}Before you go</h2>
   <p><strong>Check on arrival.</strong> Rules, hours and access change without notice. Posted signs
   win over anything on this map.</p>
 </section>

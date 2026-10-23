@@ -427,3 +427,11 @@ tbody th { font-weight: var(--w-ui); }
 h1 { letter-spacing: -0.02em; }
 .lede { font-size: 20px; line-height: 1.45; }
 .count, .card-dist { font-variant-numeric: tabular-nums; }
+
+/* ---------- Icons (js/icons.js, inlined by tools/build-pages.mjs) ---------- */
+.ic { display: inline-block; flex-shrink: 0; vertical-align: -0.17em; margin-right: 0.4em; }
+.btn .ic { vertical-align: -0.22em; }
+.tag .ic { vertical-align: -0.18em; margin-right: 0.3em; }
+.chips li .ic { margin-right: 0.35em; }
+.panel h2 .ic, h2 .ic { color: var(--ocean); }
+.addr .ic { color: var(--ocean); }
