@@ -263,13 +263,40 @@
   }
 
   /* ---------- State + features ---------- */
-  const state = { filterType: "all", filterCat: "all", query: "" };
+  const state = { filterType: "all", filterCat: "all", query: "", queryRaw: "" };
 
+  // Folds macrons and the ʻokina out of both sides, so "kaneohe" finds
+  // "Kāneʻohe" and "puuhonua" finds "Puʻuhonua": almost nobody types the
+  // diacritics, and the data carries them on nearly every place name.
+  function foldText(s) {
+    return String(s || "")
+      .normalize("NFD")
+      .replace(/[̀-ͯ]/g, "")
+      .replace(/[ʻʼ‘’']/g, "")
+      .toLowerCase();
+  }
+  const ISLAND_ALIASES = { Oahu: "oahu honolulu", Maui: "maui", Kauai: "kauai", "Hawaii Island": "big island hawaii" };
+  const hayCache = new WeakMap();
+  function haystack(p) {
+    let h = hayCache.get(p);
+    if (!h) {
+      h = foldText(p.name + " " + (p.region || "") + " " + (p.island || "") + " " +
+        (ISLAND_ALIASES[p.island] || "") + " " + (p.address || "") + " " +
+        (CATEGORY_LABEL[p.category] || "") + " " + p.category);
+      h = " " + h.replace(/[^a-z0-9]+/g, " ");
+      hayCache.set(p, h);
+    }
+    return h;
+  }
+  // Every word must match the START of a word somewhere, in any order:
+  // "ewa beach park" finds "ʻEwa Beach Community Park" without needing the
+  // exact phrase, and "ewa" no longer matches the middle of "Leeward".
   function matchesQuery(p) {
     if (!state.query) return true;
-    const hay = (p.name + " " + (p.region || "") + " " + (p.island || "") + " " + (p.address || "") + " " +
-      (CATEGORY_LABEL[p.category] || "")).toLowerCase();
-    return hay.indexOf(state.query) !== -1;
+    const h = haystack(p);
+    return state.query.replace(/[^a-z0-9]+/g, " ").trim().split(" ").every(function (w) {
+      return h.indexOf(" " + w) !== -1;
+    });
   }
 
   function passesFilters(p) {
@@ -359,11 +386,13 @@
     map.once("idle", collapseAttrib);
     // Zoom + geolocate stack top-right so the bottom stays free for filters.
     map.addControl(new maplibregl.NavigationControl({ visualizePitch: true }), "top-right");
-    map.addControl(new maplibregl.GeolocateControl({
+    const geolocate = new maplibregl.GeolocateControl({
       positionOptions: { enableHighAccuracy: true },
       trackUserLocation: true,
       showUserHeading: true
-    }), "top-right");
+    });
+    map.addControl(geolocate, "top-right");
+    geolocate.on("trackuserlocationstart", function () { track("near-me", { page: "map" }); });
     // Run setup once — 'load' can be missed if the first render is gated (e.g. the
     // container wasn't laid out / compositing yet), so 'idle' + a poll are fallbacks.
     let setupDone = false;
@@ -440,6 +469,22 @@
     // After fitAll, so the deep link's flyTo isn't immediately overwritten by
     // the all-islands jump.
     openFromQuery();
+    // Pins paint on the next frame or two; drop the loading pill once the map
+    // settles, with a timer as the backstop for panes that never fire idle.
+    map.once("idle", hideLoading);
+    setTimeout(hideLoading, 1500);
+  }
+
+  const loadingEl = document.getElementById("map-loading");
+  function hideLoading() {
+    if (!loadingEl || loadingEl.classList.contains("is-done")) return;
+    loadingEl.classList.add("is-done");
+    setTimeout(function () { loadingEl.hidden = true; }, 400);
+  }
+
+  // Forwarded to js/track.js, which is a no-op until analytics is configured.
+  function track(name, data) {
+    try { if (window.hdmTrack) window.hdmTrack(name, data); } catch (e) {}
   }
 
   /* ---------- Island name labels ---------- */
@@ -693,12 +738,26 @@
      0.9 was the first instinct and would have caught the portrait iPad, which
      has ample room to show the whole chain at z6.44. */
   const SLACK_LIMIT = 1.2; // ≈ frame 2.3x taller than the chain needs
+  let initialIsland = null; // set from ?island= by applyQueryFilters()
 
   function fitInitial() {
     const fc = currentFeatures();
     if (!map || !fc.features.length) return;
     const all = new maplibregl.LngLatBounds();
     fc.features.forEach(function (f) { all.extend(f.geometry.coordinates); });
+
+    // Arriving from an island hub's "Open the full map" (/?island=Maui):
+    // open on that island. A starting view, not a picker; the rest of the
+    // chain is one pinch away, the same as the Oʻahu default below.
+    if (initialIsland) {
+      const isl = fc.features.filter(function (f) { return PARKS[f.properties.idx].island === initialIsland; });
+      if (isl.length) {
+        const b = new maplibregl.LngLatBounds();
+        isl.forEach(function (f) { b.extend(f.geometry.coordinates); });
+        const cam = cameraForPadded(b);
+        if (cam) { applyCamera(cam, false); return; }
+      }
+    }
 
     if (verticalSlack(all) > SLACK_LIMIT) {
       const oahu = PARKS.filter(function (p) { return p.island === "Oahu"; });
@@ -877,7 +936,10 @@
     } catch (e) { return; }
     if (!slug) return;
     const park = getSlugMap()[slug];
-    if (park) focusPark(park);
+    if (park) {
+      openSource = "link";
+      focusPark(park);
+    }
   }
 
   /* ---------- Nearby navigation (prev/next through neighbouring places) ---------- */
@@ -993,7 +1055,7 @@
   }
 
   function updateResetVisibility() {
-    const active = state.filterType !== "all" || state.filterCat !== "all";
+    const active = state.filterType !== "all" || state.filterCat !== "all" || !!state.query;
     filterReset.hidden = !active;
     resetDivider.hidden = !active;
   }
@@ -1017,6 +1079,7 @@
   function updateFilterSummary(count) {
     if (!filtersSummary) return;
     const bits = [];
+    if (state.query) bits.push("“" + state.queryRaw + "”");
     if (state.filterCat !== "all") bits.push(CAT_PLURAL[state.filterCat] || state.filterCat);
     if (state.filterType !== "all") bits.push(TYPE_LABEL[state.filterType] || state.filterType);
     const filtered = bits.length > 0;
@@ -1038,7 +1101,52 @@
 
   if (filtersToggle) {
     filtersToggle.addEventListener("click", function () {
-      setSheetOpen(filterSheet.hidden);
+      const opening = filterSheet.hidden;
+      setSheetOpen(opening);
+      // Desktop only: focusing on a phone throws up the keyboard over the
+      // chips the person probably opened the sheet to tap.
+      if (opening && searchInput && window.matchMedia("(hover: hover) and (pointer: fine)").matches) {
+        searchInput.focus({ preventScroll: true });
+      }
+    });
+  }
+
+  /* ---------- Search ---------- */
+  // Lives at the top of the filter sheet rather than in the header, so it costs
+  // no map space until asked for. Narrows the same set the chips do, and the
+  // collapsed bar reads it out, so a searched map never looks broken.
+  const searchInput = document.getElementById("search-input");
+  let searchFitTimer = null;
+  let searchTrackTimer = null;
+  function setQuery(raw) {
+    state.queryRaw = String(raw || "").trim();
+    state.query = foldText(state.queryRaw);
+    refresh();
+    updateResetVisibility();
+    clearTimeout(searchFitTimer);
+    searchFitTimer = setTimeout(function () {
+      if (visibleParks().length) fitAll(true);
+    }, 450);
+    clearTimeout(searchTrackTimer);
+    if (state.query.length >= 3) {
+      searchTrackTimer = setTimeout(function () {
+        track("search", { q: state.query.slice(0, 40), results: visibleParks().length });
+      }, 1500);
+    }
+  }
+  if (searchInput) {
+    searchInput.addEventListener("input", function () { setQuery(searchInput.value); });
+    // Safari's clear button and Escape-to-clear fire "search", not always "input".
+    searchInput.addEventListener("search", function () { setQuery(searchInput.value); });
+    searchInput.addEventListener("keydown", function (e) {
+      // Enter on a phone: close the sheet and show the map of what matched.
+      if (e.key === "Enter") {
+        e.preventDefault();
+        searchInput.blur();
+        setSheetOpen(false);
+        const hits = visibleParks();
+        if (hits.length === 1) { openSource = "search"; focusPark(hits[0]); }
+      }
     });
   }
 
@@ -1065,6 +1173,7 @@
       refresh();
       fitAll(true);
       updateResetVisibility();
+      track("filter", { leash: state.filterType });
     });
   });
 
@@ -1076,12 +1185,16 @@
       refresh();
       fitAll(true);
       updateResetVisibility();
+      track("filter", { category: state.filterCat });
     });
   });
 
   filterReset.addEventListener("click", function () {
     state.filterType = "all";
     state.filterCat = "all";
+    state.query = "";
+    state.queryRaw = "";
+    if (searchInput) searchInput.value = "";
     document.querySelectorAll("[data-filter-type]").forEach(function (b) {
       b.classList.toggle("active", b.getAttribute("data-filter-type") === "all");
     });
@@ -1119,9 +1232,17 @@
     }
     listGrid.innerHTML = parks.map(function (park) {
       const dotCls = park.type === "off-leash" ? "icon-offleash" : "icon-leashed";
+      // Commons serves fixed thumbnail steps; 500px covers the full-width band at 2x.
+      // Lazy, so only cards scrolled into view fetch. A failed thumb removes
+      // itself and the card falls back to its text-only layout.
+      const thumb = park.photo
+        ? '<img class="list-card-thumb" src="' + escapeHtml(park.photo.replace(/\/\d+px-/, "/500px-")) +
+          '" alt="" loading="lazy" decoding="async" width="500" height="282" onerror="this.remove()">'
+        : "";
       return (
         '<li>' +
-          '<button class="list-card" data-list-idx="' + PARKS.indexOf(park) + '">' +
+          '<button class="list-card' + (thumb ? " has-thumb" : "") + '" data-list-idx="' + PARKS.indexOf(park) + '">' +
+            thumb +
             '<div class="list-card-head">' +
               '<span class="list-card-icon ' + dotCls + '">' + catIcon(park.category, 13) + "</span>" +
               '<span class="list-card-name">' + escapeHtml(park.name) + "</span>" +
@@ -1144,6 +1265,7 @@
     const park = PARKS[Number(btn.getAttribute("data-list-idx"))];
     if (!park) return;
     showMapView();
+    openSource = "list";
     focusPark(park);
   });
 
@@ -1176,11 +1298,17 @@
   }
 
   document.querySelectorAll("[data-view]").forEach(function (btn) {
-    btn.addEventListener("click", function () { setViewMode(btn.getAttribute("data-view")); });
+    btn.addEventListener("click", function () {
+      setViewMode(btn.getAttribute("data-view"));
+      track("view", { mode: btn.getAttribute("data-view") });
+    });
   });
 
   /* ---------- Modal ---------- */
   const backdrop = document.getElementById("modal-backdrop");
+  // How the next openModal() was reached, for tracking only: "pin" unless a
+  // list card, search or deep link set it just before. Reset on every open.
+  let openSource = "pin";
 
   // Guards against a stale photo load finishing after a newer park has
   // already been opened (openModal can be called again before a prior
@@ -1254,6 +1382,8 @@
   // isStep is true only when arriving via the prev/next arrows, swipe or arrow
   // keys — a fresh selection (pin or list card) re-anchors the nearby walk.
   function openModal(park, isStep) {
+    track("place-open", { via: isStep ? "nearby" : openSource, category: park.category, island: park.island });
+    openSource = "pin";
     if (!isStep) buildNav(park);
     renderNav();
     const modalEl = document.querySelector("#modal-backdrop .modal");
@@ -1437,6 +1567,7 @@
   document.addEventListener("keydown", function (e) {
     if (backdrop.hidden) return;
     if (e.key !== "ArrowLeft" && e.key !== "ArrowRight") return;
+    if (e.target && e.target.matches && e.target.matches("input, textarea")) return; // moving the caret
     e.preventDefault();
     e.stopPropagation();
     stepNav(e.key === "ArrowRight" ? 1 : -1);
@@ -1445,6 +1576,9 @@
   document.addEventListener("keydown", function (e) {
     if (e.key !== "Escape") return;
     // Innermost thing first, so Escape always undoes the most recent action.
+    // A non-empty search box clears itself first (the browser does that for
+    // type=search); only an empty one lets Escape fall through.
+    if (e.target === searchInput && searchInput.value) return;
     if (!backdrop.hidden) closeModal();
     else if (!guideEl.hidden) closeGuide();
     else if (viewMode === "list") showMapView();
@@ -1504,6 +1638,34 @@
     document.head.appendChild(script);
   }
   injectStructuredData();
+
+  /* ---------- ?cat= and ?q= deep links ---------- */
+  // The category hubs link to /?cat=beach so "Open the full map" lands on the
+  // map already filtered to what the page was about. Applied before the map
+  // exists, so the first refresh() and fitInitial() already use it.
+  (function applyQueryFilters() {
+    let params;
+    try { params = new URLSearchParams(window.location.search); } catch (e) { return; }
+    const cat = params.get("cat");
+    if (cat && CAT_PLURAL[cat]) {
+      state.filterCat = cat;
+      document.querySelectorAll("[data-filter-cat]").forEach(function (b) {
+        b.classList.toggle("active", b.getAttribute("data-filter-cat") === cat);
+      });
+    }
+    const isl = params.get("island");
+    if (isl && PARKS.some(function (p) { return p.island === isl; })) initialIsland = isl;
+    const q = params.get("q");
+    if (q && searchInput) {
+      searchInput.value = q.slice(0, 60);
+      state.queryRaw = searchInput.value.trim();
+      state.query = foldText(state.queryRaw);
+    }
+    if (state.filterCat !== "all" || state.query) {
+      updateResetVisibility();
+      updateFilterSummary(visibleParks().length);
+    }
+  })();
 
   /* ---------- Init ---------- */
   fetch("https://tiles.openfreemap.org/styles/positron")

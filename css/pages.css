@@ -359,3 +359,43 @@ tbody th { font-weight: 800; }
 @media (prefers-reduced-motion: reduce) {
   .thread-credit__heart { animation: none; }
 }
+
+/* ---------- Hub map + "sort by distance" (js/hub-map.js) ---------- */
+.hub-map-wrap { margin: 6px 0 26px; }
+.hub-map {
+  position: relative;
+  height: 340px;
+  border-radius: var(--radius);
+  overflow: hidden;
+  border: 1px solid var(--rule);
+  background: #dceef1;
+  box-shadow: var(--shadow);
+}
+.hub-map-fallback {
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  margin: 0; font-weight: 700; color: var(--ink-soft);
+}
+.hub-map.is-ready .hub-map-fallback { display: none; }
+.hub-tools { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.hub-tools .btn { font-family: inherit; border: 0; cursor: pointer; }
+.near-status { margin: 10px 0 0; font-weight: 700; color: var(--ocean-deep); }
+.card-dist {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: rgba(14, 116, 144, 0.12);
+  color: var(--ocean-deep);
+  font-size: 12px;
+  font-weight: 800;
+}
+.hub-pop a { font: 800 14px/1.3 var(--font); color: var(--ocean-deep); text-decoration: none; }
+.hub-pop a:hover { text-decoration: underline; }
+.hub-pop .pop-meta { display: block; margin-top: 2px; font: 700 12px var(--font); color: var(--ink-soft); }
+.hub-me {
+  width: 14px; height: 14px; border-radius: 50%;
+  background: #2563eb; border: 3px solid #fff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.25);
+}
+@media (max-width: 620px) { .hub-map { height: 260px; } }

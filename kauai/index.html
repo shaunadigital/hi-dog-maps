@@ -27,7 +27,7 @@
 <link rel="preconnect" href="https://upload.wikimedia.org" />
 <link rel="preload" href="/fonts/urbanist-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/fonts/urbanist-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/css/pages.css?v=3" />
+<link rel="stylesheet" href="/css/pages.css?v=4" />
 <script type="application/ld+json">{"@context":"https://schema.org","@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://hawaiidogmap.com/"},{"@type":"ListItem","position":2,"name":"Kauaʻi","item":"https://hawaiidogmap.com/kauai/"}]}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"Are dogs allowed on Kauaʻi beaches?","acceptedAnswer":{"@type":"Answer","text":"The opposite of Maui: Kauaʻi County parks and beaches prohibit dogs entirely except by permit. The places that work are narrow, specific carve-outs."}},{"@type":"Question","name":"How many dog-friendly places are there on Kauaʻi?","acceptedAnswer":{"@type":"Answer","text":"This map lists 9 on Kauaʻi: 1 dog parks, 2 beaches, 6 trails."}},{"@type":"Question","name":"Are Hawaiʻi state park beaches open to dogs?","acceptedAnswer":{"@type":"Answer","text":"No. State-park beaches are closed to dogs on every island, leashed or not, with service animals excepted. That applies regardless of what the county rule says."}}]}</script>
   <script type="application/ld+json">{"@context":"https://schema.org","@type":"ItemList","name":"Dog-friendly places on Kauaʻi","numberOfItems":9,"itemListElement":[{"@type":"ListItem","position":1,"url":"https://hawaiidogmap.com/place/kauai-humane-society-dog-park/","name":"Kauai Humane Society Dog Park"},{"@type":"ListItem","position":2,"url":"https://hawaiidogmap.com/place/sleeping-giant-nounou-trail/","name":"Sleeping Giant (Nounou) Trail"},{"@type":"ListItem","position":3,"url":"https://hawaiidogmap.com/place/moalepe-trail/","name":"Moalepe Trail"},{"@type":"ListItem","position":4,"url":"https://hawaiidogmap.com/place/kuilau-ridge-trail/","name":"Kuilau Ridge Trail"},{"@type":"ListItem","position":5,"url":"https://hawaiidogmap.com/place/waimea-canyon-trail-kokee-state-park/","name":"Waimea Canyon Trail (Kokeʻe State Park)"},{"@type":"ListItem","position":6,"url":"https://hawaiidogmap.com/place/powerline-trail/","name":"Powerline Trail"},{"@type":"ListItem","position":7,"url":"https://hawaiidogmap.com/place/ke-ala-hele-makalae-kapaa-bike-path/","name":"Ke Ala Hele Makalae (Kapaʻa Bike Path)"},{"@type":"ListItem","position":8,"url":"https://hawaiidogmap.com/place/mahaulepu-beach/","name":"Mahaulepu Beach"},{"@type":"ListItem","position":9,"url":"https://hawaiidogmap.com/place/kalapaki-beach/","name":"Kalapaki Beach"}]}</script>
@@ -57,6 +57,17 @@
 <h1>Dog-Friendly Places on Kauaʻi</h1>
 <p class="lede">9 verified spots: 1 dog parks, 2 beaches, 6 trails, of which 1 allow off-leash.</p>
 
+<section class="hub-map-wrap" aria-label="Map of dog-friendly places on Kauaʻi">
+  <div class="hub-map" id="hub-map" data-points="[[-159.42178,21.96484,&quot;/place/kauai-humane-society-dog-park/&quot;,&quot;Kauai Humane Society Dog Park&quot;,1],[-159.34672,22.06138,&quot;/place/sleeping-giant-nounou-trail/&quot;,&quot;Sleeping Giant (Nounou) Trail&quot;,0],[-159.39538,22.08916,&quot;/place/moalepe-trail/&quot;,&quot;Moalepe Trail&quot;,0],[-159.41367,22.07659,&quot;/place/kuilau-ridge-trail/&quot;,&quot;Kuilau Ridge Trail&quot;,0],[-159.63844,22.082,&quot;/place/waimea-canyon-trail-kokee-state-park/&quot;,&quot;Waimea Canyon Trail (Kokeʻe State Park)&quot;,0],[-159.44055,22.11019,&quot;/place/powerline-trail/&quot;,&quot;Powerline Trail&quot;,0],[-159.31747,22.07428,&quot;/place/ke-ala-hele-makalae-kapaa-bike-path/&quot;,&quot;Ke Ala Hele Makalae (Kapaʻa Bike Path)&quot;,0],[-159.41614,21.88909,&quot;/place/mahaulepu-beach/&quot;,&quot;Mahaulepu Beach&quot;,0],[-159.35172,21.96023,&quot;/place/kalapaki-beach/&quot;,&quot;Kalapaki Beach&quot;,0]]">
+    <p class="hub-map-fallback">Loading the map…</p>
+  </div>
+  <div class="hub-tools">
+    <button class="btn" type="button" id="near-me"><span aria-hidden="true">📍 </span>Sort by distance from me</button>
+    <a class="btn btn-primary" href="/?island=Kauai"><span aria-hidden="true">🗺️ </span>Open the full map</a>
+  </div>
+  <p class="near-status" id="near-status" role="status" hidden></p>
+</section>
+
 <section class="panel panel-dogs">
   <h2>The rule on Kauaʻi</h2>
   <p>The opposite of Maui: Kauaʻi County parks and beaches prohibit dogs entirely except by permit. The places that work are narrow, specific carve-outs.</p>
@@ -69,7 +80,7 @@
 <section class="hub-group">
   <h2>Dog parks on Kauaʻi <span class="count">1</span></h2>
   <ul class="grid">
-<li class="card">
+<li class="card" data-lat="21.96484" data-lng="-159.42178">
   <a href="/place/kauai-humane-society-dog-park/">
     <span class="card-tags">
       <span class="tag tag-off">Off-leash</span>
@@ -86,7 +97,7 @@
 <section class="hub-group">
   <h2>Beaches on Kauaʻi <span class="count">2</span></h2>
   <ul class="grid">
-<li class="card">
+<li class="card" data-lat="21.88909" data-lng="-159.41614">
   <a href="/place/mahaulepu-beach/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -98,7 +109,7 @@
     <span class="card-desc">A wild, undeveloped beach near Poʻipu on privately-owned land (Grove Farm Company), with dunes considered a sacred…</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="21.96023" data-lng="-159.35172">
   <a href="/place/kalapaki-beach/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -115,7 +126,7 @@
 <section class="hub-group">
   <h2>Trails on Kauaʻi <span class="count">6</span></h2>
   <ul class="grid">
-<li class="card">
+<li class="card" data-lat="22.06138" data-lng="-159.34672">
   <a href="/place/sleeping-giant-nounou-trail/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -127,7 +138,7 @@
     <span class="card-desc">A popular ridge trail up Nounou Mountain (&quot;Sleeping Giant&quot;) on state Forest Reserve land, with sweeping coastal views…</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="22.08916" data-lng="-159.39538">
   <a href="/place/moalepe-trail/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -139,7 +150,7 @@
     <span class="card-desc">A forest reserve trail through Upcountry Wailua ranchland and forest, often combined with the adjoining Kuilau Ridge…</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="22.07659" data-lng="-159.41367">
   <a href="/place/kuilau-ridge-trail/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -151,7 +162,7 @@
     <span class="card-desc">A gentle, scenic ridge trail in the same forest reserve as Moalepe, with picnic pavilions along the way and mountain…</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="22.082" data-lng="-159.63844">
   <a href="/place/waimea-canyon-trail-kokee-state-park/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -163,7 +174,7 @@
     <span class="card-desc">A trail into Waimea Canyon, &quot;the Grand Canyon of the Pacific,&quot; inside Kokeʻe State Park.</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="22.11019" data-lng="-159.44055">
   <a href="/place/powerline-trail/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -175,7 +186,7 @@
     <span class="card-desc">An 11-mile trail through Kauaʻi&#39;s forested interior connecting the Wailua area to Princeville on the North Shore…</span>
   </a>
 </li>
-<li class="card">
+<li class="card" data-lat="22.07428" data-lng="-159.31747">
   <a href="/place/ke-ala-hele-makalae-kapaa-bike-path/">
     <span class="card-tags">
       <span class="tag tag-on">Leash required</span>
@@ -217,5 +228,7 @@
   </p>
   <p class="foot-credit"><a class="thread-credit" href="https://shauna.digital" target="_blank" rel="noopener" aria-label="Built with love by shauna.digital">Built with <svg class="thread-credit__heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by shauna.digital</a></p>
 </footer>
+<script src="/js/track.js?v=1" defer></script>
+<script src="/js/hub-map.js?v=1" defer></script>
 </body>
 </html>

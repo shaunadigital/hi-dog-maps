@@ -233,7 +233,7 @@ for (const p of PARKS) {
 }
 
 /* ---------- Page shell ---------- */
-function page({ title, description, canonical, body, jsonld = [], breadcrumb }) {
+function page({ title, description, canonical, body, jsonld = [], breadcrumb, scripts = "" }) {
   const ld = jsonld.filter(Boolean).map(
     (o) => `<script type="application/ld+json">${JSON.stringify(o)}</script>`
   ).join("\n  ");
@@ -266,7 +266,7 @@ function page({ title, description, canonical, body, jsonld = [], breadcrumb }) 
 <link rel="preconnect" href="https://upload.wikimedia.org" />
 <link rel="preload" href="/fonts/urbanist-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
 <link rel="preload" href="/fonts/urbanist-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
-<link rel="stylesheet" href="/css/pages.css?v=3" />
+<link rel="stylesheet" href="/css/pages.css?v=4" />
 ${ld}
 </head>
 <body>
@@ -307,6 +307,8 @@ ${body}
   </p>
   <p class="foot-credit"><a class="thread-credit" href="https://shauna.digital" target="_blank" rel="noopener" aria-label="Built with love by shauna.digital">Built with <svg class="thread-credit__heart" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg> by shauna.digital</a></p>
 </footer>
+<script src="/js/track.js?v=1" defer></script>
+${scripts}
 </body>
 </html>
 `;
@@ -359,7 +361,7 @@ function faqBlock(qas) {
 /* A place's card, used on every hub page. */
 function placeCard(p) {
   const c = catBy[p.category];
-  return `<li class="card">
+  return `<li class="card" data-lat="${p.lat}" data-lng="${p.lng}">
   <a href="${p._url}">
     <span class="card-tags">
       <span class="tag tag-${p.type === "off-leash" ? "off" : "on"}">${p.type === "off-leash" ? "Off-leash" : "Leash required"}</span>
@@ -376,6 +378,27 @@ function placeCard(p) {
 function cardGrid(list) {
   return `<ul class="grid">\n${list.map(placeCard).join("\n")}\n</ul>`;
 }
+
+/* A small map of just this hub's places, plus "sort by distance from me".
+   Search sends people to these hubs (/maui/ gets the most Google clicks), and
+   until now they had to leave the page to see anything on a map. MapLibre is
+   only fetched once the map nears the viewport (js/hub-map.js), so the text,
+   which is what ranks and what paints first, is not held up by it. The point
+   data is inline: [lng, lat, url, name, offLeash]. */
+function hubMap(list, label, fullMapHref) {
+  const pts = list.map((p) => [p.lng, p.lat, p._url, p.name, p.type === "off-leash" ? 1 : 0]);
+  return `<section class="hub-map-wrap" aria-label="Map of ${esc(label)}">
+  <div class="hub-map" id="hub-map" data-points="${esc(JSON.stringify(pts))}">
+    <p class="hub-map-fallback">Loading the map…</p>
+  </div>
+  <div class="hub-tools">
+    <button class="btn" type="button" id="near-me"><span aria-hidden="true">📍 </span>Sort by distance from me</button>
+    <a class="btn btn-primary" href="${fullMapHref}"><span aria-hidden="true">🗺️ </span>Open the full map</a>
+  </div>
+  <p class="near-status" id="near-status" role="status" hidden></p>
+</section>`;
+}
+const HUB_SCRIPTS = `<script src="/js/hub-map.js?v=1" defer></script>`;
 
 /* ---------- Place pages ---------- */
 function placePage(p) {
@@ -445,7 +468,7 @@ function placePage(p) {
   const body = `
 <article class="place">
   <div class="tags">
-    <span class="tag tag-${offleash ? "off" : "on"}">${offleash ? "🦮 Off-leash" : "🦮 Leash required"}</span>
+    <span class="tag tag-${offleash ? "off" : "on"}"><span aria-hidden="true">${offleash ? "🐕" : "🦮"} </span>${offleash ? "Off-leash" : "Leash required"}</span>
     <span class="tag">${esc(cat.one)}</span>
     <span class="tag">${esc(isle.name)}</span>
     ${p.uncertain ? '<span class="tag tag-warn">⚠️ Verify before visiting</span>' : ""}
@@ -463,17 +486,17 @@ function placePage(p) {
       : ""}
 
   <section class="panel panel-dogs">
-    <h2>🐶 Dog rules</h2>
+    <h2><span aria-hidden="true">🐶 </span>Dog rules</h2>
     <p>${esc(p.dogRules || "")}</p>
   </section>
 
   <div class="two-up">
     <section class="panel">
-      <h2>🕐 Hours</h2>
+      <h2><span aria-hidden="true">🕐 </span>Hours</h2>
       <p>${esc(p.hours || "Not posted")}</p>
     </section>
     <section class="panel">
-      <h2>✨ Amenities</h2>
+      <h2><span aria-hidden="true">✨ </span>Amenities</h2>
       ${p.amenities?.length
         ? `<ul class="chips">${p.amenities.map((a) => `<li>${esc(a)}</li>`).join("")}</ul>`
         : "<p>None listed</p>"}
@@ -481,8 +504,8 @@ function placePage(p) {
   </div>
 
   <div class="actions">
-    <a class="btn btn-primary" href="/?place=${p._slug}">🗺️ Show on the map</a>
-    <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener">🧭 Get directions</a>
+    <a class="btn btn-primary" href="/?place=${p._slug}"><span aria-hidden="true">🗺️ </span>Show on the map</a>
+    <a class="btn" href="https://www.google.com/maps/dir/?api=1&amp;destination=${p.lat},${p.lng}" target="_blank" rel="noopener"><span aria-hidden="true">🧭 </span>Get directions</a>
   </div>
 
   <section class="rules-note">
@@ -543,6 +566,8 @@ function islandPage(isle) {
 <h1>Dog-Friendly Places on ${esc(isle.name)}</h1>
 <p class="lede">${list.length} verified spots: ${byCat.map((g) => `${g.items.length} ${g.c.many.toLowerCase()}`).join(", ")}${offleash ? `, of which ${offleash} allow off-leash` : ""}.</p>
 
+${hubMap(list, `dog-friendly places on ${isle.name}`, `/?island=${encodeURIComponent(isle.key)}`)}
+
 <section class="panel panel-dogs">
   <h2>The rule on ${esc(isle.name)}</h2>
   <p>${rules.summary}</p>
@@ -580,6 +605,7 @@ ${faqBlock(qas)}
     )),
     canonical: `/${isle.slug}/`,
     breadcrumb: crumbs(trail),
+    scripts: HUB_SCRIPTS,
     jsonld: [
       breadcrumbLd(trail),
       faqLd(qas),
@@ -642,6 +668,8 @@ ${missing.length
         }</p>`
       : ""}
 
+${hubMap(list, `dog-friendly ${cat.many.toLowerCase()} in Hawaiʻi`, `/?cat=${cat.key}`)}
+
 ${byIsle
       .map(
         (g) => `<section class="hub-group">
@@ -665,6 +693,7 @@ ${faqBlock(qas)}`;
     )),
     canonical: `/${cat.slug}/`,
     breadcrumb: crumbs(trail),
+    scripts: HUB_SCRIPTS,
     jsonld: [
       breadcrumbLd(trail),
       faqLd(qas),
@@ -918,6 +947,23 @@ ${urls
 </urlset>
 `;
 writeFileSync(join(ROOT, "sitemap.xml"), sitemap, "utf8");
+
+/* The map's own index.html carries the total in its static HTML: the header
+   line, the filter bar count, the loading pill and the meta descriptions. JS
+   overwrites the first two at runtime, but crawlers, link unfurlers and the
+   first paint all see the static number, which used to be "0 spots". Synced
+   here so it can't go stale when places are added. */
+{
+  const idxPath = join(ROOT, "index.html");
+  const n = PARKS.length;
+  const before = readFileSync(idxPath, "utf8");
+  const after = before
+    .replace(/(id="result-count">)\d+(<)/, `$1${n}$2`)
+    .replace(/(id="filters-count"> \()\d+(\)<)/, `$1${n}$2`)
+    .replace(/(id="loading-count">)\d+(<)/, `$1${n}$2`)
+    .replace(/Find \d+ verified dog-friendly places/g, `Find ${n} verified dog-friendly places`);
+  if (after !== before) writeFileSync(idxPath, after, "utf8");
+}
 
 console.log(`Generated ${PARKS.length} place pages, ${ISLANDS.length} island hubs, ${CATEGORIES.length} category hubs, rules + browse.`);
 console.log(`sitemap.xml: ${urls.length + 1} URLs, lastmod ${today}`);

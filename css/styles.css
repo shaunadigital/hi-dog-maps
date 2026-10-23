@@ -1027,6 +1027,82 @@ body.basemap-satellite .island-label {
   transition: transform 0.15s ease, box-shadow 0.15s ease;
 }
 .list-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-float); }
+/* Photo band on the ~40 places with a Commons photo. Full-bleed to the card's
+   edges, so it reads as a postcard rather than an inset thumbnail. */
+.list-card.has-thumb { padding-top: 0; overflow: hidden; }
+.list-card-thumb {
+  display: block;
+  width: calc(100% + 32px);
+  margin: 0 -16px 12px;
+  height: 140px;
+  object-fit: cover;
+  background: rgba(14, 116, 144, 0.08);
+}
+.list-card.has-thumb:not(:has(.list-card-thumb)) { padding-top: 14px; }
+
+/* ---------- Search (top of the filter sheet) ---------- */
+.search-row {
+  position: relative;
+  flex-basis: 100%;
+  display: flex;
+  align-items: center;
+}
+.search-icon {
+  position: absolute;
+  left: 12px;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+#search-input {
+  width: 100%;
+  font: inherit;
+  font-size: 16px; /* under 16px, iOS zooms the whole page on focus */
+  font-weight: 700;
+  color: var(--ink);
+  background: #fff;
+  border: 1.5px solid rgba(14, 116, 144, 0.28);
+  border-radius: 999px;
+  padding: 8px 14px 8px 34px;
+  outline: none;
+  -webkit-appearance: none;
+  appearance: none;
+}
+#search-input::placeholder { color: #94a3b8; font-weight: 600; }
+#search-input:focus { border-color: var(--ocean); box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.16); }
+.search-row + .filter-divider { display: none; }
+
+/* ---------- Loading pill ---------- */
+.map-loading {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  box-shadow: var(--shadow-float);
+  border-radius: 999px;
+  padding: 10px 18px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ocean-deep);
+  white-space: nowrap;
+  pointer-events: none;
+  transition: opacity 0.35s ease;
+}
+.map-loading.is-done { opacity: 0; }
+.map-loading[hidden] { display: none; }
+.map-loading-dot {
+  width: 10px; height: 10px;
+  border-radius: 50%;
+  background: var(--ocean);
+  animation: loading-pulse 1s ease-in-out infinite alternate;
+}
+@keyframes loading-pulse { from { opacity: 0.25; transform: scale(0.7); } to { opacity: 1; transform: scale(1.1); } }
+@media (prefers-reduced-motion: reduce) { .map-loading-dot { animation: none; } }
 
 .list-card-head { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; }
 .list-card-icon {

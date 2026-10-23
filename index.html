@@ -7,7 +7,7 @@
   <meta http-equiv="Pragma" content="no-cache" />
   <meta http-equiv="Expires" content="0" />
   <title>Hawaiʻi Dog Map: Dog Parks, Dog-Friendly Beaches &amp; Trails</title>
-  <meta name="description" content="Find 289 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios. Interactive map with hours, rules, and amenities for every spot." />
+  <meta name="description" content="Find 308 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios. Interactive map with hours, rules, and amenities for every spot." />
   <link rel="canonical" href="https://hawaiidogmap.com/" />
 
   <!-- Open Graph / social preview -->
@@ -15,7 +15,7 @@
   <meta property="og:url" content="https://hawaiidogmap.com/" />
   <meta property="og:site_name" content="Hawaii Dog Map" />
   <meta property="og:title" content="Hawaiʻi Dog Map: Dog Parks, Dog-Friendly Beaches & Trails" />
-  <meta property="og:description" content="Find 289 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios." />
+  <meta property="og:description" content="Find 308 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios." />
   <meta property="og:image" content="https://hawaiidogmap.com/icons/og-image.png" />
   <meta property="og:image:width" content="1200" />
   <meta property="og:image:height" content="630" />
@@ -24,7 +24,7 @@
   <!-- Twitter card -->
   <meta name="twitter:card" content="summary_large_image" />
   <meta name="twitter:title" content="Hawaiʻi Dog Map: Dog Parks, Dog-Friendly Beaches & Trails" />
-  <meta name="twitter:description" content="Find 289 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios." />
+  <meta name="twitter:description" content="Find 308 verified dog-friendly places across Oʻahu, Maui, Kauaʻi, and Hawaiʻi Island: off-leash dog parks, leash-allowed parks and beaches, hiking trails, and dog-welcoming restaurant patios." />
   <meta name="twitter:image" content="https://hawaiidogmap.com/icons/og-image.png" />
 
   <meta name="theme-color" content="#0e7490" />
@@ -56,7 +56,7 @@
   <link rel="preload" href="/fonts/urbanist-latin.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="preload" href="/fonts/urbanist-latin-ext.woff2?v=1" as="font" type="font/woff2" crossorigin />
   <link rel="stylesheet" href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" />
-  <link rel="stylesheet" href="css/styles.css?v=20" />
+  <link rel="stylesheet" href="css/styles.css?v=21" />
 </head>
 <body>
   <!-- Gradient defs for the paw-print markers, defined once and referenced by
@@ -82,6 +82,13 @@
        reads as printed stock rather than a screen. pointer-events:none is
        load-bearing — without it this swallows every pan, zoom and pin click. -->
   <div class="map-grain" aria-hidden="true"></div>
+
+  <!-- Covers the 2 to 4 seconds between first paint and the first pins, which
+       otherwise read as an empty map of Hawaiʻi. Removed by onMapLoad(). -->
+  <div class="map-loading" id="map-loading" role="status">
+    <span class="map-loading-dot" aria-hidden="true"></span>
+    <span>Loading <span id="loading-count">308</span> dog-friendly spots…</span>
+  </div>
 
   <!-- List view: an alternative to the map for browsing every place. Content
        is rendered into the DOM by refresh() regardless of whether this is the
@@ -111,7 +118,7 @@
       </button>
       <div class="brand-text">
         <h1>Hawaiʻi Dog Map</h1>
-        <p class="brand-sub"><span id="result-count">0</span> spots on Oʻahu, Maui, Kauaʻi &amp; Hawaiʻi Island</p>
+        <p class="brand-sub"><span id="result-count">308</span> spots on Oʻahu, Maui, Kauaʻi &amp; Hawaiʻi Island</p>
       </div>
       <button class="guide-trigger" id="guide-trigger" type="button">
         <span aria-hidden="true">⚠️</span><span class="guide-trigger-label">Rules &amp; safety</span>
@@ -132,7 +139,7 @@
               aria-expanded="false" aria-controls="filter-sheet">
         <span class="filters-icon" aria-hidden="true">☰</span>
         <span class="filters-summary" id="filters-summary">All places</span>
-        <span class="chip-count" id="filters-count"> (289)</span>
+        <span class="chip-count" id="filters-count"> (308)</span>
         <span class="filters-caret" aria-hidden="true">▾</span>
       </button>
       <div class="filter-divider" aria-hidden="true"></div>
@@ -149,6 +156,12 @@
     </div>
 
     <div class="filter-sheet" id="filter-sheet" hidden>
+    <div class="search-row" role="search">
+      <svg class="search-icon" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true"><circle cx="11" cy="11" r="7" fill="none" stroke="currentColor" stroke-width="2.2"/><path d="M20 20l-4-4" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+      <input type="search" id="search-input" placeholder="Search by name, town or island"
+             aria-label="Search places by name, town or island" autocomplete="off" enterkeyhint="search" />
+    </div>
+    <div class="filter-divider" aria-hidden="true"></div>
     <div class="filter-group" role="group" aria-label="Leash rules filter">
       <button class="chip active" data-filter-type="all">All<span class="chip-count"></span></button>
       <button class="chip" data-filter-type="off-leash"><span class="dot dot-offleash"></span>Off-leash<span class="chip-count"></span></button>
@@ -194,23 +207,23 @@
         <p class="modal-desc" id="modal-desc"></p>
 
         <div class="info-card info-dogs">
-          <h3>🐶 Dog rules</h3>
+          <h3><span aria-hidden="true">🐶 </span>Dog rules</h3>
           <p id="modal-dog-rules"></p>
         </div>
         <div class="info-grid">
           <div class="info-card">
-            <h3>🕐 Hours</h3>
+            <h3><span aria-hidden="true">🕐 </span>Hours</h3>
             <p id="modal-hours"></p>
           </div>
           <div class="info-card">
-            <h3>✨ Amenities</h3>
+            <h3><span aria-hidden="true">✨ </span>Amenities</h3>
             <ul class="amenity-list" id="modal-amenities"></ul>
           </div>
         </div>
 
         <div class="modal-actions">
-          <a id="modal-directions" class="btn btn-primary" target="_blank" rel="noopener">🧭 Get directions</a>
-          <a id="modal-streetview" class="btn btn-secondary" target="_blank" rel="noopener">👀 View on Google Maps</a>
+          <a id="modal-directions" class="btn btn-primary" target="_blank" rel="noopener"><span aria-hidden="true">🧭 </span>Get directions</a>
+          <a id="modal-streetview" class="btn btn-secondary" target="_blank" rel="noopener"><span aria-hidden="true">👀 </span>View on Google Maps</a>
         </div>
         <p class="modal-disclaimer">Check posted signs on arrival; rules and access change.
           Pick up after your pup.
@@ -341,7 +354,8 @@
   </section>
 
   <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-  <script src="js/parks-data.js?v=11"></script>
-  <script src="js/app.js?v=19"></script>
+  <script src="js/track.js?v=1"></script>
+  <script src="js/parks-data.js?v=12"></script>
+  <script src="js/app.js?v=20"></script>
 </body>
 </html>

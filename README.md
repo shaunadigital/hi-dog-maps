@@ -1,6 +1,6 @@
 # Hawaiʻi Dog Map 🐾
 
-An interactive map of 289 dog-friendly places across Hawaiʻi: dog parks, leash-allowed parks and beaches, trails, and dog-welcoming restaurant patios on Oʻahu, Maui, Kauaʻi and Hawaiʻi Island. Every place carries its dog rules, and anything not officially confirmed is flagged.
+An interactive map of 308 dog-friendly places across Hawaiʻi: dog parks, leash-allowed parks and beaches, trails, and dog-welcoming restaurant patios on Oʻahu, Maui, Kauaʻi and Hawaiʻi Island. Every place carries its dog rules, and anything not officially confirmed is flagged.
 
 **🌺 Live: [hawaiidogmap.com](https://hawaiidogmap.com)**
 
@@ -10,7 +10,9 @@ An interactive map of 289 dog-friendly places across Hawaiʻi: dog parks, leash-
 
 - **Custom vector map** (MapLibre GL + [OpenFreeMap](https://openfreemap.org), recolored to a brand palette) with a gentle 3D tilt, sky, and Esri shaded relief and satellite imagery.
 - **Clustered markers** that break apart as you zoom in, and category **line-icons** (paw / tree / waves / mountain / utensils) shared between pins, filters, and the list view.
-- **Search** (name / region / island / address), **filters** by leash rule and category with live result counts, and a one-click reset.
+- **Search** at the top of the filter sheet (name / town / island, diacritic-insensitive, so "kaneohe" finds Kāneʻohe), **filters** by leash rule and category with live result counts, and a one-click reset.
+- **Hub maps**: every island and category page has a small map of just its places and a "Sort by distance from me" button.
+- **Deep links**: `/?place=<slug>`, `/?cat=beach`, `/?island=Maui`, `/?q=<search>`.
 - **List view**: browse every filtered place as a scrollable list instead of the map. Useful on its own, and doubles as real, indexable content for search engines.
 - **Detail panel** per place: description, dog rules, hours, amenities, and a **Get directions** link. Slides in from the side (a bottom sheet on mobile) without blocking the map, so you can keep browsing while it's open.
 - **Geolocate control** to find what's near you, regardless of which island you're on. No island picker: it's one continuous map.
@@ -40,6 +42,8 @@ node tools/build-pages.mjs
 - `css/styles.css`: styles (brand tokens in `:root`, incl. the global `--font`)
 - `js/parks-data.js`: the dataset (one object per location)
 - `js/app.js`: map, marker sync, search, filters, list view, detail panel, structured-data injection
+- `js/hub-map.js`: the small map and distance sort on generated hub pages
+- `js/track.js`: action tracking (no-op until an Umami website ID is set inside it)
 - `robots.txt`, `sitemap.xml`, `manifest.json`, `favicon.ico`, `icons/`: SEO/social assets
 
 ## Adding a location
