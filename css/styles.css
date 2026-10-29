@@ -94,7 +94,9 @@ html, body {
   font-family: var(--font);
   color: var(--ink);
   background: #dbeafe;
-  overflow: hidden;
+  /* The page scrolls now (Oct 2026): one screen of fixed map, then the
+     .home-below section slides up over it. Sideways scroll stays off. */
+  overflow-x: hidden;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -1514,3 +1516,58 @@ body.basemap-satellite .channel-label span { color: rgba(255, 255, 255, 0.7); te
 .chip-icon .ic-f { display: none; }
 .chip.active .chip-icon .ic-r { display: none; }
 .chip.active .chip-icon .ic-f { display: block; }
+
+
+/* ---------- Below the map (Oct 2026) ----------
+   .home-spacer is one transparent screen that lets every pointer event fall
+   through to the fixed map. .home-below then scrolls up over the map and its
+   floating controls (z-index above them at 1000, below the guide at 1100 and
+   the place panel at 2000). */
+.home-spacer { height: 100vh; height: 100svh; pointer-events: none; }
+.home-below {
+  position: relative;
+  z-index: 1050;
+  min-height: 100vh;
+  min-height: 100svh;
+  background: var(--panel);
+  border-top: 1px solid var(--panel-border);
+  box-shadow: 0 -10px 30px rgba(15, 23, 42, 0.18);
+  border-radius: 20px 20px 0 0;
+  color: var(--ink);
+}
+.hb-inner { max-width: 1040px; margin: 0 auto; padding: 28px 16px 48px; }
+.hb-back {
+  display: inline-flex; align-items: center; gap: 8px;
+  font: inherit; font-size: 14px; font-weight: var(--w-ui);
+  color: var(--ocean-deep); background: transparent;
+  border: 1px solid var(--panel-border); border-radius: 999px;
+  padding: 7px 14px; cursor: pointer;
+}
+.hb-back:hover, .hb-back:focus-visible { background: rgba(14, 116, 144, 0.08); }
+.home-below h2 { font-size: clamp(24px, 4vw, 34px); font-weight: var(--w-display); line-height: 1.15; margin: 22px 0 10px; }
+.home-below h3 { font-size: 18px; font-weight: var(--w-heading); margin: 30px 0 12px; }
+.hb-lede { font-size: 16.5px; line-height: 1.65; color: var(--ink-soft); max-width: 70ch; margin: 0; }
+.hb-islands, .hb-types { list-style: none; margin: 0; padding: 0; display: grid; gap: 12px; }
+.hb-islands { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.hb-types { grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 10px; }
+.hb-island, .hb-type {
+  display: flex; text-decoration: none; color: inherit;
+  background: var(--card); border: 1px solid var(--panel-border);
+  border-radius: var(--radius); transition: border-color .15s ease, transform .15s ease;
+}
+.hb-island:hover, .hb-island:focus-visible, .hb-type:hover, .hb-type:focus-visible { border-color: var(--ocean); transform: translateY(-1px); }
+.hb-island { flex-direction: column; gap: 3px; padding: 16px; height: 100%; }
+.hb-island-name { font-size: 19px; font-weight: var(--w-display); color: var(--ocean-deep); }
+.hb-island-count { font-size: 14px; font-weight: var(--w-ui); }
+.hb-island-mix { font-size: 13px; color: var(--ink-soft); }
+.hb-island-rule { font-size: 13px; color: var(--ink-soft); margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--panel-border); }
+.hb-type { align-items: center; gap: 10px; padding: 12px 14px; font-weight: var(--w-ui); }
+.hb-type svg { color: var(--ocean); flex: none; }
+.hb-type-count { margin-left: auto; font-size: 13px; color: var(--ink-soft); font-variant-numeric: tabular-nums; }
+.hb-more { margin: 28px 0 0; display: flex; flex-wrap: wrap; gap: 8px 22px; }
+.hb-more a { color: var(--ocean-deep); font-weight: var(--w-ui); }
+@media (prefers-reduced-motion: reduce) { .hb-island, .hb-type { transition: none; } }
+.chip-browse { text-decoration: none; }
+/* 360px and under: the Browse chip made the one-row bar overflow at 320px.
+   The total is already in the header and the loading pill, so the count goes. */
+@media (max-width: 360px) { #filters-count { display: none; } }
