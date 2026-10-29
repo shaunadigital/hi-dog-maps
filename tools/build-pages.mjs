@@ -583,6 +583,7 @@ ${byCat
       .map(
         (g) => `<section class="hub-group">
   <h2>${esc(g.c.many)} on ${esc(isle.name)} <span class="count">${g.items.length}</span></h2>
+  ${g.c.key === "beach" && BEACH_ISLANDS.includes(isle.key) ? `<p class="group-note"><a href="/${isle.slug}/beaches/">All ${g.items.length} ${esc(isle.name)} beaches by area →</a></p>` : ""}
   ${cardGrid(g.items)}
 </section>`
       )
@@ -679,6 +680,7 @@ ${byIsle
         (g) => `<section class="hub-group">
   <h2>${esc(cat.many)} on ${esc(g.i.name)} <span class="count">${g.items.length}</span></h2>
   <p class="group-note">${ISLAND_RULES[g.i.key].summary}</p>
+  ${cat.key === "beach" && BEACH_ISLANDS.includes(g.i.key) ? `<p class="group-note"><a href="/${g.i.slug}/beaches/">${esc(g.i.name)} beaches by area: map, rules and FAQ →</a></p>` : ""}
   ${cardGrid(g.items)}
 </section>`
       )
@@ -724,6 +726,74 @@ ${faqBlock(qas)}`;
           name: p.name
         }))
       }
+    ],
+    body
+  });
+}
+
+/* ---------- Island beach pages (Oct 2026) ----------
+   /beaches/ got 723 impressions and 3 clicks in 90 days: people search
+   "north shore dog friendly beaches", not "Hawaiʻi". Only islands with enough
+   beaches to make a real page get one; Kauaʻi (2) and Hawaiʻi Island (3) stay
+   as sections of /beaches/. Regions get anchor ids (#north-shore). */
+const BEACH_ISLANDS = ["Oahu", "Maui"];
+function islandBeachPage(isle) {
+  const list = PARKS.filter((p) => p.island === isle.key && p.category === "beach");
+  const url = `/${isle.slug}/beaches/`;
+  const trail = [
+    { name: "Home", url: "/" },
+    { name: isle.name, url: `/${isle.slug}/` },
+    { name: "Beaches", url }
+  ];
+  const regions = {};
+  for (const p of list) (regions[p.region || "Other"] ||= []).push(p);
+  const groups = Object.entries(regions).sort((a, b) => b[1].length - a[1].length || a[0].localeCompare(b[0]));
+  const flagged = list.filter((p) => p.uncertain).length;
+  const top = groups.slice(0, 3).map(([r, items]) => `${r} (${items.length})`).join(", ");
+  const qas = [
+    { q: `Are dogs allowed on ${isle.name} beaches?`, a: ISLAND_RULES[isle.key].summary },
+    { q: `Which ${isle.name} beaches allow dogs?`,
+      a: `This map lists ${list.length} on ${isle.name}, grouped by area: ${groups.map(([r, items]) => `${r} (${items.length})`).join(", ")}. Each has its own page with the leash rule, hours and directions.` },
+    flagged ? { q: `Why are some ${isle.name} beaches marked "verify before visiting"?`,
+      a: `${flagged} of these allow dogs only on the wet sand below the high-tide line, or their rule couldn't be fully confirmed from an official list. Check posted signs when you arrive.` } : null,
+    { q: "Can dogs go on Hawaiʻi state park beaches?",
+      a: "No. State-park beaches are closed to dogs on every island, leashed or not, service animals excepted." }
+  ].filter(Boolean);
+  const body = `
+<h1>Dog-Friendly Beaches on ${esc(isle.name)}</h1>
+<p class="lede">${list.length} beaches on ${esc(isle.name)} where you can bring your dog, by area: ${groups.map(([r, items]) => `<a href="#${slugify(r)}">${esc(r)}</a> (${items.length})`).join(", ")}.</p>
+
+${hubMap(list, `dog-friendly beaches on ${isle.name}`, `/?island=${encodeURIComponent(isle.key)}&cat=beach`)}
+
+<section class="panel panel-dogs">
+  <h2>The beach rule on ${esc(isle.name)}</h2>
+  <p>${ISLAND_RULES[isle.key].summary}</p>
+  <p><a href="/rules/">Full rules &amp; safety guide, island by island →</a></p>
+</section>
+
+${groups.map(([r, items]) => `<section class="hub-group" id="${slugify(r)}">
+  <h2>${esc(r)} beaches <span class="count">${items.length}</span></h2>
+  ${cardGrid(items)}
+</section>`).join("\n")}
+
+${faqBlock(qas)}
+
+<section class="rules-note">
+  <h2>More on ${esc(isle.name)}</h2>
+  <p><a href="/${isle.slug}/">Every dog-friendly place on ${esc(isle.name)}</a> · <a href="/beaches/">Dog-friendly beaches on every island</a></p>
+</section>`;
+  return page({
+    title: fitTitle(`Dog-Friendly Beaches on ${isle.name}: All ${list.length}, by Area`, `${isle.name} Dog-Friendly Beaches (${list.length})`),
+    description: noDash(clamp(`${list.length} dog-friendly beaches on ${isle.name}, by area: ${top}. Leash rules, hours and a map for each.`)),
+    canonical: url,
+    breadcrumb: crumbs(trail),
+    scripts: HUB_SCRIPTS,
+    jsonld: [
+      breadcrumbLd(trail),
+      faqLd(qas),
+      { "@context": "https://schema.org", "@type": "ItemList", name: `Dog-friendly beaches on ${isle.name}`,
+        numberOfItems: list.length,
+        itemListElement: list.map((p, i) => ({ "@type": "ListItem", position: i + 1, url: ORIGIN + p._url, name: p.name })) }
     ],
     body
   });
@@ -1001,6 +1071,11 @@ for (const isle of ISLANDS) {
 for (const cat of CATEGORIES) {
   write(`${cat.slug}/index.html`, categoryPage(cat));
   urls.push({ loc: `/${cat.slug}/`, pri: "0.9" });
+}
+for (const key of BEACH_ISLANDS) {
+  const isle = islandBy[key];
+  write(`${isle.slug}/beaches/index.html`, islandBeachPage(isle));
+  urls.push({ loc: `/${isle.slug}/beaches/`, pri: "0.8" });
 }
 write("rules/index.html", rulesPage());
 urls.push({ loc: "/rules/", pri: "0.9" });
