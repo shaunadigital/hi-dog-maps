@@ -690,10 +690,21 @@ ${faqBlock(qas)}`;
     title: cat.key === "dog-park"
       ? `Off-Leash Dog Parks in Hawaiʻi: All ${list.length}, by Island`
       : `Dog-Friendly ${cat.many} in Hawaiʻi: ${list.length} Spots by Island`,
+    /* Dog parks and parks get "near me" searches ("dog park near me",
+       "dog-friendly walks near me"), and their hub has a sort-by-distance
+       button, so their descriptions lead with finding one near you. */
     description: noDash(clamp(
-      `${list.length} ${cat.key === "dog-park" ? "off-leash dog parks" : "dog-friendly " + cat.many.toLowerCase()} in Hawaiʻi: ${byIsle
-        .map((g) => `${g.i.name} (${g.items.length})`)
-        .join(", ")}. Leash rules, hours and amenities for each, plus a map.`
+      cat.key === "dog-park"
+        ? `Find an off-leash dog park near you. All ${list.length} in Hawaiʻi: ${byIsle
+            .map((g) => `${g.i.name} (${g.items.length})`)
+            .join(", ")}. Sort by distance, with hours and rules.`
+        : cat.key === "park"
+          ? `Find a dog-friendly park near you for a walk. ${list.length} in Hawaiʻi: ${byIsle
+              .map((g) => `${g.i.name} (${g.items.length})`)
+              .join(", ")}. Sort by distance, with leash rules.`
+          : `${list.length} dog-friendly ${cat.many.toLowerCase()} in Hawaiʻi: ${byIsle
+              .map((g) => `${g.i.name} (${g.items.length})`)
+              .join(", ")}. Leash rules, hours and amenities for each, plus a map.`
     )),
     canonical: `/${cat.slug}/`,
     breadcrumb: crumbs(trail),
